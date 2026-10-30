@@ -18,7 +18,10 @@ class StaticPrototypeChecks(unittest.TestCase):
 
     def test_docker_configuration_present(self):
         compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")
-        self.assertIn("8080:80", compose)
+        # The web app publishes on 8080 (localhost by default); the legacy
+        # prototype stays available behind the "legacy" profile.
+        self.assertIn("${OPENCHART_PORT:-8080}:80", compose)
+        self.assertIn("${OPENCHART_BIND:-127.0.0.1}", compose)
         self.assertIn("legacy/index.html", compose)
 
     def test_core_prototype_content(self):

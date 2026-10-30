@@ -28,7 +28,7 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM", "S", "RUF"]
 known-first-party = ["openchart_api"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101"]
+"**/tests/**" = ["S101", "S105", "S106"]
 
 [tool.mypy]
 strict = true

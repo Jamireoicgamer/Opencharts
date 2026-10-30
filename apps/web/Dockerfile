@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+# OpenChart AI web app, served by nginx. Build from the repository root:
+#   docker build -f apps/web/Dockerfile .
+
+FROM node:22-alpine AS build
+RUN corepack enable
+WORKDIR /src
+# Dependencies first, so code changes do not reinstall them.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN pnpm install --frozen-lockfile --filter "@opencharts/web..."
+COPY tsconfig.base.json ./
+COPY packages/ui packages/ui
+COPY apps/web apps/web
+RUN pnpm --filter @opencharts/web build
+
+FROM nginx:stable-alpine
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/apps/web/dist /usr/share/nginx/html
