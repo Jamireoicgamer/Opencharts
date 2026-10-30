@@ -1,42 +1,86 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useApiHealth, type ApiHealth } from './useApiHealth';
+import type { ReactNode } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
+import { TopBar } from './components/TopBar';
+import { AccountPage } from './pages/Account';
+import { HomePage } from './pages/Home';
+import { LoginPage } from './pages/Login';
+import { RegisterPage } from './pages/Register';
+import { SetupPage } from './pages/Setup';
+import { useSession } from './session';
 
-const statusLabel: Record<ApiHealth['state'], string> = {
-  checking: 'API: checking',
-  ok: 'API: ok',
-  unreachable: 'API: unreachable',
-};
+function Splash({ message }: { message: string }) {
+  return (
+    <main className="auth-page">
+      <p className="muted" role="status">
+        {message}
+      </p>
+    </main>
+  );
+}
 
-export function App() {
-  const health = useApiHealth();
+/** Pages for signed-out visitors: setup (only before the owner exists), sign in, register. */
+function Public({ page, children }: { page: 'setup' | 'login' | 'register'; children: ReactNode }) {
+  const { session } = useSession();
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/';
+  if (session.status === 'loading') return <Splash message="Loading…" />;
+  if (session.status === 'error') return <Splash message={session.message} />;
+  // Once signed in, continue to the page that sent the visitor here.
+  if (session.status === 'signed-in') return <Navigate to={from} replace />;
+  if (session.status === 'needs-setup' && page !== 'setup') return <Navigate to="/setup" replace />;
+  if (session.status === 'signed-out' && page === 'setup') return <Navigate to="/login" replace />;
+  return children;
+}
+
+function SignedIn() {
+  const { session } = useSession();
+  const location = useLocation();
+  if (session.status === 'loading') return <Splash message="Loading…" />;
+  if (session.status === 'error') return <Splash message={session.message} />;
+  if (session.status === 'needs-setup') return <Navigate to="/setup" replace />;
+  if (session.status === 'signed-out')
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <span className="brand">
-          <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 3v18h18M6.5 15.5l4.2-4.2 3.5 2.2L20 6" />
-          </svg>
-          OpenChart AI
-        </span>
-        <span
-          className="status"
-          data-state={health.state}
-          role="status"
-          title={health.state === 'ok' ? `API version ${health.version}` : undefined}
-        >
-          {statusLabel[health.state]}
-        </span>
-      </header>
-      <main className="chart-area">
-        <div className="empty-chart">
-          <h1>No data source connected</h1>
-          <p>
-            Live market data arrives in milestone M3. Nothing on this screen is simulated, so there
-            is nothing to show yet.
-          </p>
-        </div>
-      </main>
+      <TopBar />
+      <Routes>
+        <Route index element={<HomePage />} />
+        <Route path="account/*" element={<AccountPage user={session.user} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <Routes>
+      <Route
+        path="/setup"
+        element={
+          <Public page="setup">
+            <SetupPage />
+          </Public>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <Public page="login">
+            <LoginPage />
+          </Public>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <Public page="register">
+            <RegisterPage />
+          </Public>
+        }
+      />
+      <Route path="/*" element={<SignedIn />} />
+    </Routes>
   );
 }
