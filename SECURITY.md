@@ -8,15 +8,19 @@ Please **do not open a public issue**. Report it privately through GitHub's [pri
 
 This is an early-stage project maintained by one person, so there is no bug bounty.
 
+## Audits
+
+- [October 2026](docs/security/AUDIT-2026-10.md): everything up to milestone M1a. 13 findings (4 medium, 6 low, 3 informational), all medium and low ones fixed.
+
 ## Security model (current)
 
-- **Accounts.** The first account (the owner) can only be created with a one-time setup token printed in the server logs. After that, accounts are created from invite links only. Passwords are hashed with argon2id.
-- **Sessions.** A random 256-bit token in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` when served over HTTPS), stored server-side only as a SHA-256 hash, so sessions can be listed and revoked. Failed sign-ins are rate limited and recorded.
-- **Cross-site requests.** Every state-changing request must come from the app's own origin (`Origin` and `Sec-Fetch-Site` checks).
-- **Isolation between users.** PostgreSQL row-level security on every table. The API connects as a least-privilege role and refuses to start as a superuser, a role with `BYPASSRLS`, or the schema owner.
+- **Accounts.** The first account (the owner) can only be created with a one-time setup token printed in the server logs (wrong tokens are rate limited). After that, accounts are created from invite links only; the token travels in the URL fragment, so it never reaches server logs. Passwords are hashed with argon2id, with at most two hashes running at once so requests cannot exhaust memory.
+- **Sessions.** A random 256-bit token in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` and `__Host-`-prefixed when served over HTTPS), stored server-side only as a SHA-256 hash, so sessions can be listed and revoked. Signing in again ends the browser's previous session. Failed sign-ins and registrations are rate limited and recorded.
+- **Cross-site requests.** Every state-changing request must come from the app's own origin (`Origin` and `Sec-Fetch-Site` checks). With `OPENCHART_PUBLIC_ORIGIN` set, requests for any other host name are refused, which stops DNS rebinding.
+- **Isolation between users.** PostgreSQL row-level security on every table. The API connects as a least-privilege role that cannot read password hashes, and refuses to start as a superuser, a role with `BYPASSRLS`, or the schema owner.
 - **API keys.** Encrypted with AES-256-GCM using a per-secret key, itself encrypted with a master key kept outside the database (a Docker secret). Keys are write-only through the API: they are never sent back to a browser.
 - **Audit log.** Sign-ins, failed attempts, invites and key changes are recorded in an append-only table that even the schema owner cannot modify.
-- **Deployment.** Only the web container is published, on `127.0.0.1` by default. nginx sends a strict Content-Security-Policy and other security headers; the app loads no third-party scripts.
+- **Deployment.** Only the web container is published, on `127.0.0.1` by default. Containers run as non-root users with read-only filesystems, no Linux capabilities (except Postgres, which needs them briefly at start) and `no-new-privileges`. nginx sends a strict Content-Security-Policy and other security headers, and rate limits the sign-in, registration and setup endpoints. API responses are never cached. The app loads no third-party scripts, and the interactive API docs are off by default.
 - **Supply chain.** Dependencies must be at least 14 days old, GitHub Actions are pinned to commit SHAs, and CI audits JavaScript and Python dependencies.
 
 ## Your responsibilities when self-hosting
@@ -25,4 +29,4 @@ This is an early-stage project maintained by one person, so there is no bug boun
 - Do not expose the server directly to the internet. Use Tailscale/WireGuard or a Cloudflare Tunnel with Access, and serve it over HTTPS with `OPENCHART_PUBLIC_ORIGIN` set.
 - Keep the host, Docker and this project up to date.
 
-Planned hardening (two-factor sign-in, passkeys, encrypted backups, digest-pinned images) is tracked in the [roadmap](docs/ROADMAP.md).
+Known gaps (two-factor sign-in and passkeys, password reset, master-key rotation, encrypted backups, digest-pinned images) are listed in the audit and tracked in the [roadmap](docs/ROADMAP.md).
