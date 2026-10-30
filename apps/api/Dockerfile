@@ -28,4 +28,4 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
 # Only the web container can reach this port, so trusting its forwarded
 # client address is safe.
-CMD ["uvicorn", "--factory", "openchart_api.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["uvicorn", "--factory", "openchart_api.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*", "--no-server-header"]
