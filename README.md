@@ -83,11 +83,52 @@ Review third-party dependency and market-data terms before redistributing the pr
 
 ## Development
 
-Run the basic static repository checks:
+The new app is being built in a monorepo alongside the prototype:
+
+| Path | What it is |
+|---|---|
+| `apps/web` | React + TypeScript + Vite web app |
+| `apps/api` | FastAPI service |
+| `packages/ui` | Design tokens and shared UI |
+| `legacy/` | V4.1 prototype (design reference) |
+
+You need Node.js 22+, pnpm 10 and [uv](https://docs.astral.sh/uv/). Install dependencies:
+
+```bash
+pnpm install
+```
+
+```bash
+uv sync
+```
+
+Start the API on `http://127.0.0.1:8000`:
+
+```bash
+uv run uvicorn openchart_api.main:app --reload
+```
+
+In another terminal, start the web app on `http://localhost:5173` (it proxies `/api` to the API):
+
+```bash
+pnpm dev
+```
+
+Run all checks (CI runs the same ones):
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm e2e
+```
+
+```bash
+uv run ruff check && uv run ruff format --check && uv run mypy && uv run pytest
+```
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+The first `pnpm e2e` run needs a browser: `pnpm --filter @opencharts/web exec playwright install chromium`.
 
 For issues, describe browser/version, what you expected, what happened, and steps to reproduce. Never submit API keys, credentials or sensitive portfolio data in an issue.
 

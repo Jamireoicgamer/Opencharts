@@ -18,4 +18,4 @@ The project names and logos are covered by the [trademark policy](TRADEMARKS.md)
 
 ## Checks
 
-Run `python3 -m unittest discover -s tests -v` before submitting any code changes.
+Run the checks listed under [Development in the README](README.md#development) before submitting changes; CI runs the same ones. Dependencies must be at least 14 days old (pnpm and uv enforce this), and new GitHub Actions must be pinned to a full commit SHA.
