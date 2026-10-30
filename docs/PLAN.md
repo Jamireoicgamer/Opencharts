@@ -265,7 +265,7 @@ On first run the app detects CPU, RAM and GPU and suggests a profile.
   - strict Content-Security-Policy and no third-party scripts;
   - rate limiting;
   - an outbound egress allowlist per service;
-  - SBOM, Renovate, CodeQL and Trivy in CI.
+  - dependency audits (pnpm audit, pip-audit), Dependabot with a 14-day cooldown, a 14-day minimum release age in pnpm and uv, GitHub Actions pinned to commit SHAs, and an SBOM and container image scanning once images are built (M1).
 - **Safe defaults:** the server refuses to bind to anything other than localhost until authentication is configured.
 - **Privacy toggles:** per category (tickers, theses, journal, portfolio sizes). Money amounts are sent as percentages unless the user allows otherwise.
 - **Remote access:** guides for Tailscale/WireGuard and Cloudflare Tunnel + Access. Opening ports directly is documented only as an advanced option with a hardening checklist.
@@ -306,7 +306,7 @@ Each milestone is roughly 3–8 small PRs. A PR should be reviewable in one sitt
 - Add `LICENSE` (AGPLv3), `CLA.md` + CLA Assistant workflow, `TRADEMARKS.md`, `NOTICE`.
 - Move the prototype to `legacy/index.html`; update `compose.yaml` and `tests/test_static.py` to match.
 - Scaffold the monorepo (pnpm + uv), shared lint/format config.
-- CI: ruff, mypy, pytest, eslint, tsc, vitest, Playwright, Trivy.
+- CI: ruff, mypy, pytest, eslint, tsc, vitest, Playwright, dependency audits.
 - **Done when:** CI is green on an empty app skeleton and the legacy demo still serves.
 
 ### M1 — Backend and authentication
