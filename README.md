@@ -56,15 +56,16 @@ Modern near-black UI, chart-first focus, optional panels, no gradients, lightwei
 
 ## Planned architecture
 
-- Browser-first React/TypeScript client (planned migration from V4 standalone HTML)
-- FastAPI backend, with Docker deployment
-- SQLite as initial server-side persistence
-- User-controlled market-data and AI providers
-- Ollama, OpenAI-compatible, and other optional AI integrations
-- Research with source citations and user-editable investment theses
-- Saved monitor-specific dashboards and alerts
+- React + TypeScript + Vite installable web app (PWA), with TradingView Lightweight Charts plus a custom overlay layer
+- FastAPI backend and background worker, PostgreSQL (TimescaleDB, pgvector), Redis; a lite SQLite mode for laptops
+- Multi-user accounts with Google sign-in, passkeys and 2FA; encrypted secrets vault and audit log
+- Live market data: keyless sources, bring-your-own-key providers, read-only broker sync (Trading 212 first) and CSV import
+- AI via Ollama, LM Studio, Anthropic, OpenAI-compatible or Gemini, with a small "scout" model for research and a larger "analyst" model for synthesis
+- Continuous deep research with citations, a thesis challenger, decision journal, paper trading and learning from outcomes
+- Always-on monitor mode with local-only voice commands
+- Docker Compose profiles and native installers
 
-The V4 prototype is **standalone HTML**. The planned stack has not yet been implemented. See [roadmap](docs/ROADMAP.md) for implementation milestones and [product brief](docs/PRODUCT_BRIEF.md) for project scope.
+The V4 prototype is **standalone HTML**. The planned stack has not yet been implemented. See the [master plan](docs/PLAN.md) for architecture and decisions, the [roadmap](docs/ROADMAP.md) for milestones, and the [product brief](docs/PRODUCT_BRIEF.md) for project scope.
 
 ## Funding
 
@@ -72,7 +73,7 @@ The intention is voluntary donations to support development and infrastructure. 
 
 ## Licence
 
-**Licence decision pending before public open-source release.** This is initially a private development repository. The project goal is an open-source licence (AGPLv3 is under consideration). Do not assume the code is already licensed for redistribution. Review third-party dependency and data terms before opening the repository.
+**AGPLv3 has been chosen**, together with a Contributor Licence Agreement and a trademark policy for the "OpenChart" name (see [plan §12](docs/PLAN.md#12-licensing-legal-and-funding)). The licence files are added in milestone M0; until then, do not assume the code is licensed for redistribution. Review third-party dependency and data terms before opening the repository.
 
 ## Development
 
