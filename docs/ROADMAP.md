@@ -1,32 +1,75 @@
 # Development roadmap
 
+The full plan, including architecture, decisions and acceptance criteria for each milestone, is in [PLAN.md](PLAN.md).
+
 ## Current state — V4.1 UI prototype
 - [x] Minimal chart-first interface, smooth subtle animations
 - [x] Watchlist, thesis, AI, research, portfolio, alerts and settings demo panels
 - [x] Browser-local persistence and static Docker hosting
-- [ ] Real market data and AI integration
-- [ ] Server-side persistence and secure authentication
-- [ ] Multi-device workspace synchronisation
+- [x] Master plan agreed ([PLAN.md](PLAN.md))
 
-## Foundation
-- [ ] Select an open-source licence after dependency review
-- [ ] Split HTML, CSS and JS into maintainable components
-- [ ] Expand automated testing and accessibility checks
+## M0 — Foundation
+- [ ] AGPLv3 `LICENSE`, CLA + CLA Assistant, `TRADEMARKS.md`, `NOTICE`
+- [ ] Move prototype to `legacy/index.html`
+- [ ] Monorepo scaffold (pnpm workspaces + uv)
+- [ ] CI: lint, type-check, unit, e2e and container scanning
 
-## Self-hosted backend
-- [ ] FastAPI and SQLite services
-- [ ] Secure local-only installation and remote-access guidance
-- [ ] Server-persisted watchlists, theses, research and workspaces
-- [ ] Raspberry Pi read-only kiosk mode
+## M1 — Backend and authentication
+- [ ] FastAPI, PostgreSQL, migrations, row-level security
+- [ ] Google sign-in, email/password, TOTP, passkeys
+- [ ] Encrypted secrets vault and audit log
+- [ ] Compose `core` profile, localhost-only until auth is configured
 
-## Data and AI
-- [ ] Compliant market-data adapters with timestamps and delay labels
-- [ ] Ollama and user-key cloud model integrations
-- [ ] Deterministic portfolio/risk analytics
-- [ ] Citation-linked research and thesis challenges
-- [ ] API spending caps, notifications and alert scheduling
+## M2 — Web app shell
+- [ ] React + TypeScript port of every V4 panel, backed by the API
+- [ ] Import existing browser-local data
+- [ ] Installable PWA
 
-## Public launch
-- [ ] Performance, privacy, licensing and security audits
+## M3 — Live market data
+- [ ] Provider interface, canonical instrument IDs, GBX/GBP handling
+- [ ] Crypto WebSockets, opt-in delayed equities, first bring-your-own-key adapter
+- [ ] TimescaleDB candles, Redis fan-out, client WebSocket with polling fallback
+- [ ] Source, timestamp and delay labels on every quote
+
+## M4 — Pro charting
+- [ ] Lightweight Charts engine with custom overlay canvas
+- [ ] Deterministic indicators (SMA, EMA, VWAP, RSI, MACD, Bollinger, volume)
+- [ ] Drawing tools, multi-chart layouts, saved workspaces, event markers
+
+## M5 — AI chat
+- [ ] Ollama, LM Studio, Anthropic, OpenAI-compatible and Gemini adapters
+- [ ] Scout / analyst model roles, privacy toggles, token metering and budgets
+- [ ] Chart-aware chat, AI chart annotations, pushback slider
+
+## M6 — Research agents
+- [ ] Source collectors (news, GDELT, SEC EDGAR, LSE RNS, Companies House)
+- [ ] Scout → analyst pipeline with citations and evidence labels
+- [ ] Thesis challenger with user-approved diffs
+- [ ] Notifications: web push, email, ntfy/Gotify
+
+## M7 — Journal, paper trading and learning
+- [ ] Decision journal and paper trading
+- [ ] Outcome scoring and deterministic bias statistics
+- [ ] Memory retrieval into AI prompts
+
+## M8 — Monitor mode and voice
+- [ ] `/monitor` kiosk route, device pairing, read-only device tokens
+- [ ] Scenes: rotating charts, grid, AI ticker, P&L with privacy blur
+- [ ] Local voice service: wake word or push-to-talk, STT, intents, TTS
+- [ ] Hardware detection and profile suggestions
+
+## M9 — Brokers and import
+- [ ] Trading 212 read-only sync
+- [ ] CSV import
+- [ ] Interactive Brokers adapter
+
+## M10 — Hardening and installers
+- [ ] Encrypted backups with restore drill
+- [ ] Security, accessibility and Raspberry Pi performance audits
+- [ ] Native installers (.deb/AppImage, Homebrew, winget)
 - [ ] Financial regulatory and data redistribution review
-- [ ] Contribution guidelines, support links and documentation
+
+## M11 — Future
+- [ ] Paid hosted cloud tier
+- [ ] Native mobile app
+- [ ] Fine-tuned, focused research model
