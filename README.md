@@ -40,7 +40,15 @@ OPENCHART_BIND=0.0.0.0 docker compose up -d
 
 For a Raspberry Pi monitor, open the URL in Chromium; for fullscreen kiosk use `chromium-browser --kiosk http://YOUR_SERVER_IP:8080` (the executable may be `chromium`).
 
-For access from outside your home, use [Tailscale](https://tailscale.com/) or a [Cloudflare Tunnel with Access](https://developers.cloudflare.com/cloudflare-one/) rather than opening a port on your router. When serving over HTTPS on a domain, set `OPENCHART_PUBLIC_ORIGIN=https://your.domain` so cookies are marked Secure and requests are checked against that origin. See [SECURITY.md](SECURITY.md) for the security model.
+For access from outside your home, use [Tailscale](https://tailscale.com/) or a [Cloudflare Tunnel with Access](https://developers.cloudflare.com/cloudflare-one/) rather than opening a port on your router. Set `OPENCHART_PUBLIC_ORIGIN` to the exact address you open the app at, for example:
+
+```bash
+OPENCHART_PUBLIC_ORIGIN=https://charts.example.com docker compose up -d
+```
+
+With it set, requests addressed to any other host name are refused (protecting against DNS rebinding), and over HTTPS the session cookie becomes Secure and `__Host-`-prefixed. The API logs a reminder at startup while it is unset. Changing it to `https://` signs everyone out once.
+
+See [SECURITY.md](SECURITY.md) for the security model and the latest [security audit](docs/security/AUDIT-2026-10.md).
 
 ### The V4.1 prototype
 
@@ -109,10 +117,10 @@ The API needs PostgreSQL 16. Create a database with an owner role and a separate
 uv run openchart-api migrate
 ```
 
-Start the API on `http://127.0.0.1:8000` (it prints the setup token on first run):
+Start the API on `http://127.0.0.1:8000` (it prints the setup token on first run). `OPENCHART_API_DOCS=true` turns on the interactive API docs at `/api/docs`, which are off by default:
 
 ```bash
-uv run uvicorn --factory openchart_api.main:create_app --reload
+OPENCHART_API_DOCS=true uv run uvicorn --factory openchart_api.main:create_app --reload
 ```
 
 In another terminal, start the web app on `http://localhost:5173` (it proxies `/api` to the API):
