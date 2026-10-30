@@ -150,10 +150,15 @@ function ApiKeys() {
           name="name"
           required
           pattern="[a-z0-9][a-z0-9_.\-]{0,63}"
-          placeholder="finnhub"
+          placeholder="e.g. finnhub"
           hint="Lower-case letters, digits, dots, dashes."
         />
-        <Field label="Provider (optional)" name="provider" maxLength={64} placeholder="Finnhub" />
+        <Field
+          label="Provider (optional)"
+          name="provider"
+          maxLength={64}
+          placeholder="e.g. Finnhub"
+        />
         <Field
           label="Key"
           name="value"

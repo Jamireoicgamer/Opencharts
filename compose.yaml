@@ -1,9 +1,91 @@
+# OpenChart AI: `scripts/gen-secrets.sh`, then `docker compose up -d`.
+# The web app is published on 127.0.0.1:8080 unless OPENCHART_BIND says otherwise.
+name: openchart
+
+x-api-image: &api-image
+  image: openchart-api:local
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+
 services:
-  openchart:
-    image: nginx:stable-alpine
-    container_name: openchart-ai
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openchart
+      POSTGRES_USER: openchart_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+    secrets:
+      - postgres_admin_password
+      - postgres_owner_password
+      - postgres_app_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deploy/postgres-init.sh:/docker-entrypoint-initdb.d/10-openchart-roles.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U openchart_admin -d openchart']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: applies database migrations as the schema owner, then exits.
+  migrate:
+    <<: *api-image
+    command: ['openchart-api', 'migrate']
+    restart: 'no'
+    secrets:
+      - openchart_migrate_database_url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    environment:
+      OPENCHART_PUBLIC_ORIGIN: ${OPENCHART_PUBLIC_ORIGIN:-}
+    secrets:
+      - openchart_database_url
+      - openchart_master_key
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: openchart-web:local
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
     ports:
-      - '8080:80'
+      - '${OPENCHART_BIND:-127.0.0.1}:${OPENCHART_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # The V4.1 prototype: `docker compose --profile legacy up -d legacy`.
+  legacy:
+    image: nginx:stable-alpine
+    profiles: [legacy]
+    ports:
+      - '${OPENCHART_BIND:-127.0.0.1}:8081:80'
     volumes:
       - ./legacy/index.html:/usr/share/nginx/html/index.html:ro
-    restart: unless-stopped
+
+secrets:
+  postgres_admin_password:
+    file: ./secrets/postgres_admin_password
+  postgres_owner_password:
+    file: ./secrets/postgres_owner_password
+  postgres_app_password:
+    file: ./secrets/postgres_app_password
+  openchart_migrate_database_url:
+    file: ./secrets/openchart_migrate_database_url
+  openchart_database_url:
+    file: ./secrets/openchart_database_url
+  openchart_master_key:
+    file: ./secrets/openchart_master_key
+
+volumes:
+  postgres-data:

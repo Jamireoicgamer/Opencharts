@@ -4,8 +4,10 @@
 import argparse
 import sys
 
+from pydantic import ValidationError
+
 from openchart_api import migrate
-from openchart_api.config import Settings
+from openchart_api.config import MigrateSettings
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -15,8 +17,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "migrate":
-        settings = Settings()  # values come from the environment
-        if settings.migrate_database_url is None:
+        try:
+            settings = MigrateSettings()  # values come from the environment or Docker secrets
+        except ValidationError:
             print("OPENCHART_MIGRATE_DATABASE_URL is not set", file=sys.stderr)
             return 2
         migrate.upgrade(settings.migrate_database_url.get_secret_value(), settings.app_role)
