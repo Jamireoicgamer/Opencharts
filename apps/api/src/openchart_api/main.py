@@ -8,21 +8,21 @@ proxy (the Docker ``web`` service) sits in front.
 
 import logging
 import secrets
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from typing import Literal
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from openchart_api.auth import csrf_protect
+from openchart_api.auth import check_host, csrf_protect
 from openchart_api.config import Settings
 from openchart_api.db import check_database, create_engine
 from openchart_api.routes import audit_log, auth, invites, setup
 from openchart_api.routes import secrets as secrets_routes
-from openchart_api.security import LoginRateLimiter
+from openchart_api.security import FailureLimiter
 
 __version__ = version("openchart-api")
 
@@ -56,6 +56,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             await check_database(app.state.engine)
             app.state.setup_token = await _setup_token(app, settings)
+            if settings.public_origin is None:
+                log.warning(
+                    "OPENCHART_PUBLIC_ORIGIN is not set. Set it to the URL you open the app "
+                    "at (for example https://charts.example.com) to enable Secure cookies "
+                    "and reject requests addressed to any other host."
+                )
             yield
         finally:
             await app.state.engine.dispose()
@@ -63,15 +69,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="OpenChart AI API",
         version=__version__,
-        docs_url="/api/docs",
+        docs_url="/api/docs" if settings.api_docs else None,
         redoc_url=None,
-        openapi_url="/api/openapi.json",
+        openapi_url="/api/openapi.json" if settings.api_docs else None,
         lifespan=lifespan,
     )
     app.state.settings = settings
-    app.state.login_limiter = LoginRateLimiter()
+    app.state.failure_limiter = FailureLimiter()
 
-    api = APIRouter(prefix="/api", dependencies=[Depends(csrf_protect)])
+    @app.middleware("http")
+    async def no_store(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        # API responses hold personal data: keep them out of browser and proxy caches.
+        response = await call_next(request)
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
+    api = APIRouter(prefix="/api", dependencies=[Depends(check_host), Depends(csrf_protect)])
 
     @api.get("/health")
     async def health() -> Health:
