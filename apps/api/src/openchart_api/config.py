@@ -17,6 +17,7 @@ from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 MASTER_KEY_BYTES = 32
+MIN_SETUP_TOKEN_LENGTH = 16
 _DOCKER_SECRETS = "/run/secrets"
 
 
@@ -53,6 +54,9 @@ class Settings(BaseSettings):
     # One-time token required to create the owner account. Generated and
     # logged at startup when unset and no users exist.
     setup_token: SecretStr | None = None
+    # Serve interactive API docs at /api/docs. Off by default: they reveal the
+    # whole API surface and load scripts from a CDN that the CSP blocks.
+    api_docs: bool = False
     session_ttl_days: int = 30
     invite_ttl_hours: int = 72
 
@@ -65,6 +69,13 @@ class Settings(BaseSettings):
             raise ValueError("master_key must be base64") from exc
         if len(raw) != MASTER_KEY_BYTES:
             raise ValueError(f"master_key must decode to {MASTER_KEY_BYTES} bytes")
+        return value
+
+    @field_validator("setup_token")
+    @classmethod
+    def _check_setup_token(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < MIN_SETUP_TOKEN_LENGTH:
+            raise ValueError(f"setup_token must be at least {MIN_SETUP_TOKEN_LENGTH} characters")
         return value
 
     @field_validator("public_origin")
@@ -84,6 +95,11 @@ class Settings(BaseSettings):
     @property
     def cookie_secure(self) -> bool:
         return self.public_origin is not None and self.public_origin.startswith("https://")
+
+    @property
+    def public_host(self) -> str | None:
+        """Host name (without port) of ``public_origin``, if set."""
+        return urlsplit(self.public_origin).hostname if self.public_origin else None
 
     @property
     def app_role(self) -> str:

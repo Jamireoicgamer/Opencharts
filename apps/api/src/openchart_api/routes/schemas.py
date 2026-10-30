@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
+from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, StringConstraints
 
 from openchart_api.security import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
@@ -23,6 +24,7 @@ DisplayName = Annotated[str, StringConstraints(strip_whitespace=True, min_length
 Password = Annotated[str, Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)]
 # Login accepts any length so old or wrong passwords get a normal "invalid" answer.
 AnyPassword = Annotated[str, Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)]
+Token = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
 
 class Me(BaseModel):
@@ -31,11 +33,24 @@ class Me(BaseModel):
     display_name: str
     role: Literal["owner", "admin", "member"]
 
+    @classmethod
+    def of(cls, user: object) -> "Me":
+        """Build from any object with matching attributes (a row, CurrentUser…)."""
+        return cls.model_validate(user, from_attributes=True)
+
 
 class NewAccount(BaseModel):
     email: Email
     display_name: DisplayName
     password: Password
+
+
+def too_many_attempts(wait: int) -> HTTPException:
+    return HTTPException(
+        status.HTTP_429_TOO_MANY_REQUESTS,
+        "Too many failed attempts. Try again later.",
+        headers={"Retry-After": str(wait)},
+    )
 
 
 class SessionInfo(BaseModel):
