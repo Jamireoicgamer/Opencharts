@@ -257,6 +257,8 @@ On first run the app detects CPU, RAM and GPU and suggests a profile.
 ## 10. Security and privacy
 
 - **Multi-user isolation:** a `user_id` on every row plus PostgreSQL row-level security. Roles: owner, admin, member, device.
+  - Two database roles: the schema owner (used only by the one-shot `migrate` container) and a least-privilege app role. The API refuses to start if its role is a superuser, has `BYPASSRLS`, or owns the schema.
+  - Lookups needed before a user is known (sign-in, session cookie, first-run setup, invite redemption) go through narrow `SECURITY DEFINER` functions.
 - **Authentication:** Google sign-in (OIDC), email + password (argon2id), TOTP, WebAuthn passkeys. httpOnly SameSite cookies, CSRF protection, and a session/device list with revoke.
 - **Secrets vault:** API keys and broker tokens use AES-256-GCM envelope encryption. The master key comes from a Docker secret or key file, never the database. Secrets are never returned to the browser; the UI only shows the last four characters.
 - **Audit log:** append-only record of logins, key use, AI calls, data exports and setting changes, viewable in settings.
@@ -265,8 +267,8 @@ On first run the app detects CPU, RAM and GPU and suggests a profile.
   - strict Content-Security-Policy and no third-party scripts;
   - rate limiting;
   - an outbound egress allowlist per service;
-  - dependency audits (pnpm audit, pip-audit), Dependabot with a 14-day cooldown, a 14-day minimum release age in pnpm and uv, GitHub Actions pinned to commit SHAs, and an SBOM and container image scanning once images are built (M1).
-- **Safe defaults:** the server refuses to bind to anything other than localhost until authentication is configured.
+  - dependency audits (pnpm audit, pip-audit), Dependabot with a 14-day cooldown, a 14-day minimum release age in pnpm and uv, GitHub Actions pinned to commit SHAs, and an SBOM, container image scanning and base images pinned by digest (M10).
+- **Safe defaults:** Docker publishes the web app on localhost only unless `OPENCHART_BIND` says otherwise; the API and database ports are never published. Creating the owner account needs a one-time **setup token** printed in the API logs, so nobody else on the network can claim the server first. After that, accounts are invite-only.
 - **Privacy toggles:** per category (tickers, theses, journal, portfolio sizes). Money amounts are sent as percentages unless the user allows otherwise.
 - **Remote access:** guides for Tailscale/WireGuard and Cloudflare Tunnel + Access. Opening ports directly is documented only as an advanced option with a hardening checklist.
 
