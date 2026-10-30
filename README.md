@@ -22,10 +22,10 @@ A minimal, near-black, chart-first self-hosted investment terminal — **V4.1 in
 
 ## Run locally
 
-Double-click `index.html` in a modern browser, or serve the directory:
+The V4.1 prototype lives in `legacy/index.html` and is kept as the design reference while the new app is built. Double-click it in a modern browser, or serve it:
 
 ```bash
-python3 -m http.server 8080
+python3 -m http.server 8080 --directory legacy
 ```
 
 Then open `http://localhost:8080`.
