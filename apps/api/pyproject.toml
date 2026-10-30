@@ -5,9 +5,18 @@ description = "OpenChart AI HTTP API"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.13",
+    "argon2-cffi>=23.1",
+    "asyncpg>=0.29",
+    "cryptography>=43",
     "fastapi>=0.115",
+    "pydantic-settings>=2.4",
+    "sqlalchemy[asyncio]>=2.0.30",
     "uvicorn[standard]>=0.30",
 ]
+
+[project.scripts]
+openchart-api = "openchart_api.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11,<0.12"]
