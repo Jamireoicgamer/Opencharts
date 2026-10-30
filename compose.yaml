@@ -8,10 +8,24 @@ x-api-image: &api-image
     context: .
     dockerfile: apps/api/Dockerfile
 
+# Containers that need no privileges at all: read-only filesystem, no Linux
+# capabilities, and no way to gain privileges later.
+x-locked-down: &locked-down
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    # The entrypoint starts as root to prepare the data directory, then drops
+    # to the postgres user, so it keeps its default capabilities.
+    security_opt:
+      - no-new-privileges:true
     environment:
       POSTGRES_DB: openchart
       POSTGRES_USER: openchart_admin
@@ -31,7 +45,7 @@ services:
 
   # One-shot: applies database migrations as the schema owner, then exits.
   migrate:
-    <<: *api-image
+    <<: [*api-image, *locked-down]
     command: ['openchart-api', 'migrate']
     restart: 'no'
     secrets:
@@ -41,7 +55,7 @@ services:
         condition: service_healthy
 
   api:
-    <<: *api-image
+    <<: [*api-image, *locked-down]
     restart: unless-stopped
     environment:
       OPENCHART_PUBLIC_ORIGIN: ${OPENCHART_PUBLIC_ORIGIN:-}
@@ -53,23 +67,25 @@ services:
         condition: service_completed_successfully
 
   web:
+    <<: *locked-down
     image: openchart-web:local
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     ports:
-      - '${OPENCHART_BIND:-127.0.0.1}:${OPENCHART_PORT:-8080}:80'
+      - '${OPENCHART_BIND:-127.0.0.1}:${OPENCHART_PORT:-8080}:8080'
     depends_on:
       api:
         condition: service_healthy
 
   # The V4.1 prototype: `docker compose --profile legacy up -d legacy`.
   legacy:
-    image: nginx:stable-alpine
+    <<: *locked-down
+    image: nginxinc/nginx-unprivileged:stable-alpine
     profiles: [legacy]
     ports:
-      - '${OPENCHART_BIND:-127.0.0.1}:8081:80'
+      - '${OPENCHART_BIND:-127.0.0.1}:8081:8080'
     volumes:
       - ./legacy/index.html:/usr/share/nginx/html/index.html:ro
 
