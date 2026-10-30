@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Link, NavLink } from 'react-router';
 import { useSession } from '../session';
+import { BrandMark } from './BrandMark';
 import { useApiHealth, type ApiHealth } from '../useApiHealth';
 
 const statusLabel: Record<ApiHealth['state'], string> = {
@@ -16,9 +17,7 @@ export function TopBar() {
   return (
     <header className="topbar">
       <Link to="/" className="brand">
-        <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 3v18h18M6.5 15.5l4.2-4.2 3.5 2.2L20 6" />
-        </svg>
+        <BrandMark />
         OpenChart AI
       </Link>
       <div className="topbar-actions">

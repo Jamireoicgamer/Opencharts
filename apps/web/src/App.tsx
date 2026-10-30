@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { TopBar } from './components/TopBar';
-import { AccountPage } from './pages/Account';
+import { AccountPage } from './pages/account';
 import { HomePage } from './pages/Home';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';

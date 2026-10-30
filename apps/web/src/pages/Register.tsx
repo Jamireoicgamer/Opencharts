@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { Link, useSearchParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { api, type Me } from '../api';
-import { AuthCard, ErrorMessage, Field, formValues, useSubmit } from '../components/Form';
+import { AuthCard, ErrorMessage, Field, formValues } from '../components/Form';
+import { useSubmit } from '../hooks';
 import { useSession } from '../session';
 
 export function RegisterPage() {
   const { signedIn } = useSession();
-  const [params] = useSearchParams();
-  const invite = params.get('invite');
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Invite links carry the token in the fragment (#invite=…); older links used ?invite=.
+  const [invite] = useState(
+    () =>
+      new URLSearchParams(location.hash.slice(1)).get('invite') ??
+      new URLSearchParams(location.search).get('invite'),
+  );
+  // Remove the token from the address bar, history and any bookmark.
+  useEffect(() => {
+    if (location.hash || location.search) void navigate(location.pathname, { replace: true });
+  }, [location.hash, location.search, location.pathname, navigate]);
   const { busy, error, run } = useSubmit(async (values: Record<string, string>) => {
     signedIn(await api<Me>('POST', '/auth/register', { ...values, invite_token: invite }));
   });
