@@ -9,10 +9,10 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Master plan agreed ([PLAN.md](PLAN.md))
 
 ## M0 — Foundation
-- [ ] AGPLv3 `LICENSE`, CLA + CLA Assistant, `TRADEMARKS.md`, `NOTICE`
-- [ ] Move prototype to `legacy/index.html`
-- [ ] Monorepo scaffold (pnpm workspaces + uv)
-- [ ] CI: lint, type-check, unit, e2e and container scanning
+- [x] AGPLv3 `LICENSE`, CLA + CLA Assistant, `TRADEMARKS.md`, `NOTICE`
+- [x] Move prototype to `legacy/index.html`
+- [x] Monorepo scaffold (pnpm workspaces + uv)
+- [x] CI: lint, type-check, unit, e2e and dependency audits
 
 ## M1 — Backend and authentication
 - [ ] FastAPI, PostgreSQL, migrations, row-level security
