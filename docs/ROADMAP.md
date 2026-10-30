@@ -14,11 +14,18 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Monorepo scaffold (pnpm workspaces + uv)
 - [x] CI: lint, type-check, unit, e2e and dependency audits
 
-## M1 — Backend and authentication
-- [ ] FastAPI, PostgreSQL, migrations, row-level security
-- [ ] Google sign-in, email/password, TOTP, passkeys
-- [ ] Encrypted secrets vault and audit log
-- [ ] Compose `core` profile, localhost-only until auth is configured
+## M1a — Accounts and security foundations
+- [x] FastAPI, PostgreSQL, migrations, row-level security with a least-privilege app role
+- [x] Owner setup with a one-time token, invite-only accounts, email/password (argon2id)
+- [x] Server-side sessions, device list and sign-out everywhere, CSRF protection, login rate limiting
+- [x] Encrypted secrets vault and append-only audit log
+- [x] Web pages for setup, sign-in, invites, devices, API keys and activity
+- [x] Docker Compose stack (Postgres, migrate, API, nginx), localhost-only by default, smoke-tested in CI
+
+## M1b — Stronger sign-in
+- [ ] Google sign-in (OIDC)
+- [ ] TOTP two-factor authentication
+- [ ] Passkeys (WebAuthn)
 
 ## M2 — Web app shell
 - [ ] React + TypeScript port of every V4 panel, backed by the API
