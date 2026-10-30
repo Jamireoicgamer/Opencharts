@@ -15,6 +15,9 @@ COPY packages/ui packages/ui
 COPY apps/web apps/web
 RUN pnpm --filter @opencharts/web build
 
-FROM nginx:stable-alpine
+# Unprivileged variant: runs as a non-root user and listens on 8080.
+FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx-proxy.conf /etc/nginx/openchart-proxy.conf
 COPY --from=build /src/apps/web/dist /usr/share/nginx/html
+EXPOSE 8080

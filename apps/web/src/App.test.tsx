@@ -2,7 +2,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { SessionProvider } from './session';
 import { health, member, mockApi, owner } from './test-api';
@@ -180,5 +180,78 @@ describe('account', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Sign out other devices' }));
     await screen.findByText('Chrome on Linux');
     expect(screen.queryByText('Safari on iPhone')).not.toBeInTheDocument();
+  });
+});
+
+describe('security audit fixes', () => {
+  it('reads the invite token from the URL fragment and sends it in the request body', async () => {
+    const api = mockApi({
+      'GET /setup/status': [200, { needs_setup: false }],
+      'GET /auth/me': [401, { detail: 'Not signed in' }],
+      'POST /auth/register': [201, member],
+      'GET /health': health,
+    });
+    renderAt('/register#invite=tok-123');
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('Your name'), 'Bob');
+    await user.type(screen.getByLabelText('Email'), 'bob@example.com');
+    await user.type(screen.getByLabelText('Password'), 'another long password');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('heading', { name: 'No data source connected' });
+    expect(api.calls.find((c) => c.path === '/auth/register')?.body).toMatchObject({
+      invite_token: 'tok-123',
+    });
+  });
+
+  it('creates invite links with the token in the fragment, not the query', async () => {
+    mockApi({
+      ...signedIn(owner),
+      'GET /invites': [200, []],
+      'POST /invites': [
+        201,
+        {
+          id: 'i1',
+          email: null,
+          role: 'member',
+          created_at: '2026-10-30T12:00:00Z',
+          expires_at: '2026-11-02T12:00:00Z',
+          used_at: null,
+          token: 'secret-invite-token',
+        },
+      ],
+    });
+    renderAt('/account/invites');
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Create invite link' }));
+    const link = await screen.findByText(/register#invite=secret-invite-token$/);
+    expect(link.textContent).not.toContain('?invite=');
+  });
+
+  it('returns to sign-in when the session ends elsewhere', async () => {
+    mockApi({
+      ...signedIn(owner),
+      'GET /auth/sessions': [401, { detail: 'Session expired or signed out' }],
+    });
+    renderAt('/account/sessions');
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('shows a readable error when the proxy answers with a non-JSON page', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const path = new URL(String(input), 'http://localhost').pathname;
+      if (path === '/api/setup/status') return Response.json({ needs_setup: false });
+      if (path === '/api/auth/me')
+        return Response.json({ detail: 'Not signed in' }, { status: 401 });
+      return new Response('<html>429 Too Many Requests</html>', { status: 429 });
+    });
+    renderAt('/login');
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('Email'), 'owner@example.com');
+    await user.type(screen.getByLabelText('Password'), 'pw');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many attempts. Try again later.',
+    );
   });
 });

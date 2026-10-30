@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError, type Me } from './api';
+import { api, ApiError, SESSION_ENDED_EVENT, type Me } from './api';
 
 export type SessionState =
   | { status: 'loading' }
@@ -42,6 +42,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
+  }, []);
+
+  // A 401 from any request means the session is gone (signed out on another
+  // device, or expired): show the sign-in page instead of a broken screen.
+  useEffect(() => {
+    const ended = () =>
+      setSession((current) =>
+        current.status === 'signed-in' ? { status: 'signed-out' } : current,
+      );
+    window.addEventListener(SESSION_ENDED_EVENT, ended);
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, ended);
   }, []);
 
   const signedIn = useCallback((user: Me) => setSession({ status: 'signed-in', user }), []);
