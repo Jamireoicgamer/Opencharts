@@ -24,3 +24,15 @@ updates:
     groups:
       python:
         patterns: ['*']
+  - package-ecosystem: docker
+    directories: [/apps/api, /apps/web]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14

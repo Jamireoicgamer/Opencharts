@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-import base64
-import os
-
 import pytest
 from anyio import to_thread
 
@@ -14,8 +11,7 @@ pytestmark = pytest.mark.anyio
 
 @pytest.fixture
 def env(monkeypatch: pytest.MonkeyPatch, db: Database) -> pytest.MonkeyPatch:
-    monkeypatch.setenv("OPENCHART_DATABASE_URL", db.app_url)
-    monkeypatch.setenv("OPENCHART_MASTER_KEY", base64.b64encode(os.urandom(32)).decode())
+    monkeypatch.setenv("OPENCHART_APP_ROLE", db.app_role)
     return monkeypatch
 
 

@@ -218,6 +218,12 @@ form {
   color: var(--muted);
 }
 
+section > p.muted {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* Sign-in, setup and register --------------------------------------------- */
 
 .auth-page {

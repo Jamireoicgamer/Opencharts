@@ -20,13 +20,26 @@ MASTER_KEY_BYTES = 32
 _DOCKER_SECRETS = "/run/secrets"
 
 
+_CONFIG = SettingsConfigDict(
+    env_prefix="OPENCHART_",
+    env_file=".env",
+    secrets_dir=_DOCKER_SECRETS if os.path.isdir(_DOCKER_SECRETS) else None,
+    extra="ignore",
+)
+
+
+class MigrateSettings(BaseSettings):
+    """What `openchart-api migrate` needs: schema-owner access, nothing else."""
+
+    model_config = _CONFIG
+
+    migrate_database_url: SecretStr
+    # Role the API connects as; the migrations grant it table access.
+    app_role: str = "openchart_app"
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix="OPENCHART_",
-        env_file=".env",
-        secrets_dir=_DOCKER_SECRETS if os.path.isdir(_DOCKER_SECRETS) else None,
-        extra="ignore",
-    )
+    model_config = _CONFIG
 
     # Least-privilege role the API connects as. Row-level security applies to it.
     database_url: SecretStr
@@ -57,7 +70,7 @@ class Settings(BaseSettings):
     @field_validator("public_origin")
     @classmethod
     def _check_public_origin(cls, value: str | None) -> str | None:
-        if value is None:
+        if not value:
             return None
         parts = urlsplit(value)
         if parts.scheme not in ("http", "https") or not parts.netloc or parts.path not in ("", "/"):
