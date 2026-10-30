@@ -22,10 +22,10 @@ A minimal, near-black, chart-first self-hosted investment terminal — **V4.1 in
 
 ## Run locally
 
-Double-click `index.html` in a modern browser, or serve the directory:
+The V4.1 prototype lives in `legacy/index.html` and is kept as the design reference while the new app is built. Double-click it in a modern browser, or serve it:
 
 ```bash
-python3 -m http.server 8080
+python3 -m http.server 8080 --directory legacy
 ```
 
 Then open `http://localhost:8080`.
@@ -56,15 +56,16 @@ Modern near-black UI, chart-first focus, optional panels, no gradients, lightwei
 
 ## Planned architecture
 
-- Browser-first React/TypeScript client (planned migration from V4 standalone HTML)
-- FastAPI backend, with Docker deployment
-- SQLite as initial server-side persistence
-- User-controlled market-data and AI providers
-- Ollama, OpenAI-compatible, and other optional AI integrations
-- Research with source citations and user-editable investment theses
-- Saved monitor-specific dashboards and alerts
+- React + TypeScript + Vite installable web app (PWA), with TradingView Lightweight Charts plus a custom overlay layer
+- FastAPI backend and background worker, PostgreSQL (TimescaleDB, pgvector), Redis; a lite SQLite mode for laptops
+- Multi-user accounts with Google sign-in, passkeys and 2FA; encrypted secrets vault and audit log
+- Live market data: keyless sources, bring-your-own-key providers, read-only broker sync (Trading 212 first) and CSV import
+- AI via Ollama, LM Studio, Anthropic, OpenAI-compatible or Gemini, with a small "scout" model for research and a larger "analyst" model for synthesis
+- Continuous deep research with citations, a thesis challenger, decision journal, paper trading and learning from outcomes
+- Always-on monitor mode with local-only voice commands
+- Docker Compose profiles and native installers
 
-The V4 prototype is **standalone HTML**. The planned stack has not yet been implemented. See [roadmap](docs/ROADMAP.md) for implementation milestones and [product brief](docs/PRODUCT_BRIEF.md) for project scope.
+The V4 prototype is **standalone HTML**. The planned stack has not yet been implemented. See the [master plan](docs/PLAN.md) for architecture and decisions, the [roadmap](docs/ROADMAP.md) for milestones, and the [product brief](docs/PRODUCT_BRIEF.md) for project scope.
 
 ## Funding
 
@@ -72,15 +73,62 @@ The intention is voluntary donations to support development and infrastructure. 
 
 ## Licence
 
-**Licence decision pending before public open-source release.** This is initially a private development repository. The project goal is an open-source licence (AGPLv3 is under consideration). Do not assume the code is already licensed for redistribution. Review third-party dependency and data terms before opening the repository.
+Copyright (C) 2026 Jamireoicgamer (RemnantCore). OpenChart AI is free software, licensed under the [GNU Affero General Public License v3.0 or later](LICENSE). If you run a modified version as a network service, the AGPL requires you to offer its source code to your users.
+
+- Contributors sign the [Contributor Licence Agreement](CLA.md). It lets the project offer a hosted or commercial edition alongside the open-source one.
+- The "OpenChart" and "RemnantCore" names and logos are not covered by the AGPL; see the [trademark policy](TRADEMARKS.md).
+- Third-party attributions are listed in [NOTICE](NOTICE).
+
+Review third-party dependency and market-data terms before redistributing the project.
 
 ## Development
 
-Run the basic static repository checks:
+The new app is being built in a monorepo alongside the prototype:
+
+| Path | What it is |
+|---|---|
+| `apps/web` | React + TypeScript + Vite web app |
+| `apps/api` | FastAPI service |
+| `packages/ui` | Design tokens and shared UI |
+| `legacy/` | V4.1 prototype (design reference) |
+
+You need Node.js 22+, pnpm 10 and [uv](https://docs.astral.sh/uv/). Install dependencies:
+
+```bash
+pnpm install
+```
+
+```bash
+uv sync
+```
+
+Start the API on `http://127.0.0.1:8000`:
+
+```bash
+uv run uvicorn openchart_api.main:app --reload
+```
+
+In another terminal, start the web app on `http://localhost:5173` (it proxies `/api` to the API):
+
+```bash
+pnpm dev
+```
+
+Run all checks (CI runs the same ones):
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm e2e
+```
+
+```bash
+uv run ruff check && uv run ruff format --check && uv run mypy && uv run pytest
+```
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+The first `pnpm e2e` run needs a browser: `pnpm --filter @opencharts/web exec playwright install chromium`.
 
 For issues, describe browser/version, what you expected, what happened, and steps to reproduce. Never submit API keys, credentials or sensitive portfolio data in an issue.
 

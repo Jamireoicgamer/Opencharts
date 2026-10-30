@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Keep in sync with tokens.ts. */
+:root {
+  color-scheme: dark;
+  --bg: #08090b;
+  --surface: #101215;
+  --panel: #111317;
+  --raised: #191c21;
+  --border: #22252a;
+  --line: #25282d;
+  --muted: #848991;
+  --text: #f4f5f6;
+  --green: #39c7a1;
+  --red: #e87780;
+  --accent: #b4abff;
+  --motion-fast: 110ms;
+  --motion-normal: 170ms;
+  --motion-panel: 200ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+    --motion-panel: 0ms;
+  }
+}

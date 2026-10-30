@@ -1,5 +1,5 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -7,19 +7,19 @@ ROOT = Path(__file__).resolve().parents[1]
 class StaticPrototypeChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.page = (ROOT / "index.html").read_text(encoding="utf-8")
+        cls.page = (ROOT / "legacy" / "index.html").read_text(encoding="utf-8")
 
     def test_document_foundations(self):
         for value in ("<!doctype html>", "<title>", "</html>"):
             self.assertIn(value, self.page.lower())
 
     def test_no_external_javascript(self):
-        self.assertNotRegex(self.page, r'<script[^>]*\bsrc\s*=')
+        self.assertNotRegex(self.page, r"<script[^>]*\bsrc\s*=")
 
     def test_docker_configuration_present(self):
         compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn("8080:80", compose)
-        self.assertIn("index.html", compose)
+        self.assertIn("legacy/index.html", compose)
 
     def test_core_prototype_content(self):
         for term in ("OpenChart", "watchlist", "thesis", "research"):
