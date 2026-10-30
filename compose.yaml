@@ -3,7 +3,7 @@ services:
     image: nginx:stable-alpine
     container_name: openchart-ai
     ports:
-      - "8080:80"
+      - '8080:80'
     volumes:
       - ./legacy/index.html:/usr/share/nginx/html/index.html:ro
     restart: unless-stopped

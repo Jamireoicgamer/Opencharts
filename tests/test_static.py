@@ -1,5 +1,5 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,7 +14,7 @@ class StaticPrototypeChecks(unittest.TestCase):
             self.assertIn(value, self.page.lower())
 
     def test_no_external_javascript(self):
-        self.assertNotRegex(self.page, r'<script[^>]*\bsrc\s*=')
+        self.assertNotRegex(self.page, r"<script[^>]*\bsrc\s*=")
 
     def test_docker_configuration_present(self):
         compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")

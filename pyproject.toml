@@ -1,0 +1,40 @@
+# Python workspace for OpenChart AI services (apps/api now; worker and
+# voice join in later milestones).
+
+[tool.uv.workspace]
+members = ["apps/api"]
+
+[tool.uv]
+# Supply-chain guard: only resolve distributions uploaded at least 14 days ago.
+exclude-newer = "14 days"
+
+[dependency-groups]
+dev = [
+    "httpx2",
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "S", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["openchart_api"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+files = ["apps/api/src", "apps/api/tests"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests"]
+addopts = ["--import-mode=importlib"]
