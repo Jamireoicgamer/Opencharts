@@ -73,7 +73,13 @@ The intention is voluntary donations to support development and infrastructure. 
 
 ## Licence
 
-**AGPLv3 has been chosen**, together with a Contributor Licence Agreement and a trademark policy for the "OpenChart" name (see [plan §12](docs/PLAN.md#12-licensing-legal-and-funding)). The licence files are added in milestone M0; until then, do not assume the code is licensed for redistribution. Review third-party dependency and data terms before opening the repository.
+Copyright (C) 2026 Jamireoicgamer (RemnantCore). OpenChart AI is free software, licensed under the [GNU Affero General Public License v3.0 or later](LICENSE). If you run a modified version as a network service, the AGPL requires you to offer its source code to your users.
+
+- Contributors sign the [Contributor Licence Agreement](CLA.md). It lets the project offer a hosted or commercial edition alongside the open-source one.
+- The "OpenChart" and "RemnantCore" names and logos are not covered by the AGPL; see the [trademark policy](TRADEMARKS.md).
+- Third-party attributions are listed in [NOTICE](NOTICE).
+
+Review third-party dependency and market-data terms before redistributing the project.
 
 ## Development
 
