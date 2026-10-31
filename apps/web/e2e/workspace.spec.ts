@@ -8,7 +8,7 @@ test('search, watch, write a thesis, and find it all after a reload', async ({ p
   await expect(page.getByRole('button', { name: /Choose an instrument/ })).toBeVisible();
 
   await page.keyboard.press('ControlOrMeta+k');
-  await page.getByRole('combobox').fill('rolls');
+  await page.getByRole('combobox', { name: 'Search instruments' }).fill('rolls');
   await page.getByRole('option', { name: /Rolls-Royce/ }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rolls-Royce Holdings');
   await page.getByRole('button', { name: 'Add to watchlist' }).click();

@@ -62,6 +62,7 @@ export function Palette({ onClose }: { onClose: () => void }) {
             ref={input}
             autoFocus
             role="combobox"
+            aria-label="Search instruments"
             aria-expanded="true"
             aria-controls={listId}
             aria-autocomplete="list"
