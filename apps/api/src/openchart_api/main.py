@@ -23,6 +23,16 @@ from openchart_api.db import check_database, create_engine
 from openchart_api.oidc import GoogleClient
 from openchart_api.routes import audit_log, auth, google, invites, mfa_login, security, setup
 from openchart_api.routes import secrets as secrets_routes
+from openchart_api.routes.workspace import (
+    alerts,
+    instruments,
+    positions,
+    preferences,
+    research,
+    thesis,
+    transfer,
+    watchlist,
+)
 from openchart_api.security import FailureLimiter
 
 __version__ = version("openchart-api")
@@ -108,5 +118,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for module in (setup, auth, mfa_login, google, security, invites, secrets_routes, audit_log):
         api.include_router(module.router)
     api.include_router(security.admin_router)
+    for module in (
+        instruments,
+        watchlist,
+        thesis,
+        research,
+        positions,
+        alerts,
+        preferences,
+        transfer,
+    ):
+        api.include_router(module.router)
     app.include_router(api)
     return app
