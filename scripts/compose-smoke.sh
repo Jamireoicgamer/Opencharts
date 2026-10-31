@@ -32,6 +32,7 @@ done
 echo "health: $(curl -s "$base/api/health")"
 
 curl -s "$base/api/setup/status" | grep -q '"needs_setup":true' || fail "fresh install should need setup"
+curl -s "$base/api/auth/providers" | grep -q '"google":false' || fail "Google should be off unless configured"
 
 headers=$(curl -sI "$base/")
 echo "$headers" | grep -qi "content-security-policy: default-src 'self'" || fail "missing CSP header"

@@ -60,10 +60,11 @@ type OnChange = (codes?: string[] | null) => void;
 
 function Passkeys({ status, onChange }: { status: SecurityStatus; onChange: OnChange }) {
   const withReauth = useReauth();
-  const add = useSubmit(async (values: Record<string, string>) => {
+  const add = useSubmit(async (form: HTMLFormElement, values: Record<string, string>) => {
     const added = await withReauth(() =>
       createPasskey<RecoveryCodes>(values.name?.trim() || 'Passkey'),
     );
+    form.reset();
     onChange(added.recovery_codes);
   });
   const remove = useSubmit(async (id: string) => {
@@ -98,7 +99,13 @@ function Passkeys({ status, onChange }: { status: SecurityStatus; onChange: OnCh
       </ul>
       <ErrorMessage message={remove.error} />
       {passkeysSupported() ? (
-        <form className="inline-form" onSubmit={(e) => void add.run(formValues(e))}>
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            const form = e.currentTarget;
+            void add.run(form, formValues(e));
+          }}
+        >
           <Field label="Name" name="name" maxLength={64} placeholder="e.g. Phone, Work laptop" />
           <ErrorMessage message={add.error} />
           <button className="button primary" type="submit" disabled={add.busy}>

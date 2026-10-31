@@ -87,7 +87,7 @@ async def login(
         action="auth.login",
         metadata={"methods": ["password"]},
     )
-    return Me.of(row)
+    return await Me.signed_in(conn, row.id)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -153,9 +153,7 @@ async def register(
         action="auth.registered",
         metadata={"role": row.new_user_role},
     )
-    return Me(
-        id=row.new_user_id, email=body.email, display_name=body.display_name, role=row.new_user_role
-    )
+    return await Me.signed_in(conn, row.new_user_id)
 
 
 @router.get("/sessions")

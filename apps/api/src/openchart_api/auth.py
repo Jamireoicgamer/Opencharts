@@ -106,6 +106,22 @@ def clear_session_cookie(response: Response, settings: Settings) -> None:
     )
 
 
+async def mfa_setup_required(conn: AsyncConnection, user_id: UUID) -> bool:
+    """True when the owner requires two-factor and this user has none yet.
+    Expects the RLS context to be the user's."""
+    return bool(
+        await conn.scalar(
+            text(
+                "SELECT s.require_mfa AND NOT ("
+                "  EXISTS (SELECT 1 FROM mfa_totp WHERE user_id = :u AND confirmed_at IS NOT NULL)"
+                "  OR EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id = :u))"
+                " FROM server_settings s"
+            ),
+            {"u": user_id},
+        )
+    )
+
+
 async def session_user(request: Request, conn: Conn, settings: SettingsDep) -> CurrentUser:
     """The signed-in user, even if they still have to set up two-factor."""
     token = request.cookies.get(session_cookie(settings))
@@ -123,22 +139,14 @@ async def session_user(request: Request, conn: Conn, settings: SettingsDep) -> C
         .where(sessions.c.last_seen_at < func.now() - _TOUCH_INTERVAL)
         .values(last_seen_at=func.now())
     )
-    setup_required = await conn.scalar(
-        text(
-            "SELECT s.require_mfa AND NOT ("
-            "  EXISTS (SELECT 1 FROM mfa_totp WHERE user_id = :u AND confirmed_at IS NOT NULL)"
-            "  OR EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id = :u))"
-            " FROM server_settings s"
-        ),
-        {"u": row.user_id},
-    )
+    setup_required = await mfa_setup_required(conn, row.user_id)
     return CurrentUser(
         row.user_id,
         row.email,
         row.display_name,
         row.role,
         row.session_id,
-        mfa_setup_required=bool(setup_required),
+        mfa_setup_required=setup_required,
     )
 
 

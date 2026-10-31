@@ -158,13 +158,7 @@ async def _finish_second_factor(
         action="auth.login",
         metadata={"methods": [flow.data["first"], method]},
     )
-    row = (
-        await conn.execute(
-            text("SELECT id, email, display_name, role FROM users WHERE id = :id"),
-            {"id": flow.user_id},
-        )
-    ).one()
-    return Me.of(row)
+    return await Me.signed_in(conn, flow.user_id)
 
 
 # Second-factor step ----------------------------------------------------------------
@@ -366,13 +360,7 @@ async def passkey_sign_in(
         action="auth.login",
         metadata={"methods": ["passkey"]},
     )
-    row = (
-        await conn.execute(
-            text("SELECT id, email, display_name, role FROM users WHERE id = :id"),
-            {"id": owner.user_id},
-        )
-    ).one()
-    return Me.of(row)
+    return await Me.signed_in(conn, owner.user_id)
 
 
 # Re-authentication for sensitive changes ---------------------------------------------
