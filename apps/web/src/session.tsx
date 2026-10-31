@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError, SESSION_ENDED_EVENT, type Me } from './api';
+import { api, ApiError, MFA_SETUP_REQUIRED_EVENT, SESSION_ENDED_EVENT, type Me } from './api';
 
 export type SessionState =
   | { status: 'loading' }
@@ -51,8 +51,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession((current) =>
         current.status === 'signed-in' ? { status: 'signed-out' } : current,
       );
+    // The owner may make two-factor mandatory while this user is signed in:
+    // reload who we are, so the app sends them to set it up.
+    const reload = () => void loadSession().then(setSession);
     window.addEventListener(SESSION_ENDED_EVENT, ended);
-    return () => window.removeEventListener(SESSION_ENDED_EVENT, ended);
+    window.addEventListener(MFA_SETUP_REQUIRED_EVENT, reload);
+    return () => {
+      window.removeEventListener(SESSION_ENDED_EVENT, ended);
+      window.removeEventListener(MFA_SETUP_REQUIRED_EVENT, reload);
+    };
   }, []);
 
   const signedIn = useCallback((user: Me) => setSession({ status: 'signed-in', user }), []);

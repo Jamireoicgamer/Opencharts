@@ -390,3 +390,112 @@ section > p.muted {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+/* Sign-in alternatives, security settings, dialogs ----------------------- */
+
+.auth-alternatives,
+.dialog-alternatives,
+.row-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.auth-alternatives .button {
+  flex: 1 1 100%;
+}
+
+.security-block {
+  margin: 0 0 28px;
+}
+
+.security-block h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.security-block > p.muted {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pill.on {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.totp-setup {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.qr {
+  width: 180px;
+  height: 180px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.totp-setup summary {
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.codes {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 40px;
+  margin: 0;
+  padding: 0;
+  list-style-position: inside;
+  font-variant-numeric: tabular-nums;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--green);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 60%);
+  z-index: 10;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.dialog h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.dialog p.muted {
+  margin: 0 0 14px;
+  font-size: 13px;
+}

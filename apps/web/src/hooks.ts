@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from './api';
+import { passkeyErrorMessage } from './webauthn';
+
+/** Thrown when the person closes a dialog; not an error worth showing. */
+export class Cancelled extends Error {
+  constructor() {
+    super('Cancelled');
+    this.name = 'Cancelled';
+  }
+}
 
 /** Runs an async submit handler with a busy flag and a user-facing error message. */
 export function useSubmit<T extends unknown[]>(handler: (...args: T) => Promise<void>) {
@@ -13,7 +22,12 @@ export function useSubmit<T extends unknown[]>(handler: (...args: T) => Promise<
     try {
       await handler(...args);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+      if (err instanceof Cancelled) return;
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : (passkeyErrorMessage(err) ?? 'Something went wrong. Try again.'),
+      );
     } finally {
       setBusy(false);
     }

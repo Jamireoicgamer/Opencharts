@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     api_docs: bool = False
     session_ttl_days: int = 30
     invite_ttl_hours: int = 72
+    # Google sign-in (optional). Needs public_origin: Google redirects back to
+    # {public_origin}/api/auth/google/callback. See docs/guides/google-sign-in.md.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+
+    @field_validator("google_client_id", "google_client_secret", mode="before")
+    @classmethod
+    def _empty_is_unset(cls, value: object) -> object:
+        # An empty Docker secret file or env var means "not configured".
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("master_key")
     @classmethod
@@ -100,6 +110,10 @@ class Settings(BaseSettings):
     def public_host(self) -> str | None:
         """Host name (without port) of ``public_origin``, if set."""
         return urlsplit(self.public_origin).hostname if self.public_origin else None
+
+    @property
+    def google_enabled(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret and self.public_origin)
 
     @property
     def app_role(self) -> str:

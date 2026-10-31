@@ -30,7 +30,8 @@ jobs:
           path-to-signatures: signatures/version1/cla.json
           branch: cla-signatures
           # Exact, case-sensitive GitHub logins, or the author name for commits
-          # not linked to an account (commits made with Claude Code: "Claude").
+          # not linked to an account. Commits made with Claude Code are linked
+          # to the login "claude"; "Claude" covers them when they are not.
           # A name match can be spoofed: before merging an outside PR, check
           # that any "Claude" commits really came from the maintainer.
-          allowlist: Jamireoicgamer,Claude,dependabot[bot],github-actions[bot]
+          allowlist: Jamireoicgamer,claude,Claude,dependabot[bot],github-actions[bot]

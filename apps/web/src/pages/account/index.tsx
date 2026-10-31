@@ -4,6 +4,7 @@ import type { Me } from '../../api';
 import { Activity } from './Activity';
 import { ApiKeys } from './ApiKeys';
 import { Invites } from './Invites';
+import { Security } from './Security';
 import { Sessions } from './Sessions';
 
 export function AccountPage({ user }: { user: Me }) {
@@ -17,6 +18,7 @@ export function AccountPage({ user }: { user: Me }) {
         </p>
       </header>
       <nav className="tabs" aria-label="Account sections">
+        <NavLink to="/account/security">Security</NavLink>
         <NavLink to="/account/sessions">Devices</NavLink>
         <NavLink to="/account/keys">API keys</NavLink>
         {canInvite && <NavLink to="/account/invites">Invites</NavLink>}
@@ -24,6 +26,7 @@ export function AccountPage({ user }: { user: Me }) {
       </nav>
       <Routes>
         <Route index element={<Navigate to="sessions" replace />} />
+        <Route path="security" element={<Security user={user} />} />
         <Route path="sessions" element={<Sessions />} />
         <Route path="keys" element={<ApiKeys />} />
         {canInvite && <Route path="invites" element={<Invites user={user} />} />}
