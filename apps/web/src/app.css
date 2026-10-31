@@ -450,10 +450,12 @@ section > p.muted {
 
 .codes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
-  gap: 6px 24px;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 40px;
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style-position: inside;
+  font-variant-numeric: tabular-nums;
 }
 
 .switch {

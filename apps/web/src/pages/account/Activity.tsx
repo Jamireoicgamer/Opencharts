@@ -19,6 +19,20 @@ const ACTION_LABELS: Record<string, string> = {
   'invite.revoked': 'Invite revoked',
   'secret.saved': 'API key saved',
   'secret.deleted': 'API key deleted',
+  'auth.mfa_failed': 'Wrong two-factor code',
+  'auth.reauth': 'Identity confirmed',
+  'auth.reauth_failed': 'Failed identity confirmation',
+  'auth.password_changed': 'Password changed',
+  'mfa.totp_enabled': 'Authenticator app turned on',
+  'mfa.totp_disabled': 'Authenticator app removed',
+  'mfa.recovery_codes_issued': 'New recovery codes issued',
+  'mfa.recovery_code_used': 'Recovery code used',
+  'passkey.added': 'Passkey added',
+  'passkey.removed': 'Passkey removed',
+  'oauth.linked': 'Google account linked',
+  'oauth.unlinked': 'Google account unlinked',
+  'oauth.failed': 'Google sign-in failed',
+  'settings.require_mfa_changed': 'Two-factor requirement changed',
 };
 
 export function Activity() {

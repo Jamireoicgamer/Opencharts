@@ -2,7 +2,7 @@
 
 A minimal, near-black, chart-first, self-hosted investment terminal with AI research — in early development.
 
-> **Status:** the new app currently provides accounts and security foundations (milestone M1a): owner setup, invite-only accounts, signed-in device management, an encrypted vault for API keys and a security activity log. **Market data, charts and AI arrive in later milestones**; nothing in the new app is simulated, so the chart area stays empty until a data source exists. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
+> **Status:** the new app currently provides accounts and security (milestones M1a and M1b): owner setup, invite-only accounts, two-factor sign-in with an authenticator app or passkeys, passwordless passkey sign-in, optional Google sign-in, signed-in device management, an encrypted vault for API keys and a security activity log. **Market data, charts and AI arrive in later milestones**; nothing in the new app is simulated, so the chart area stays empty until a data source exists. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
 
 The V4.1 interface prototype — simulated prices and scripted AI, browser storage only — is kept in `legacy/` as the design reference.
 
@@ -49,6 +49,14 @@ OPENCHART_PUBLIC_ORIGIN=https://charts.example.com docker compose up -d
 With it set, requests addressed to any other host name are refused (protecting against DNS rebinding), and over HTTPS the session cookie becomes Secure and `__Host-`-prefixed. The API logs a reminder at startup while it is unset. Changing it to `https://` signs everyone out once.
 
 See [SECURITY.md](SECURITY.md) for the security model and the latest [security audit](docs/security/AUDIT-2026-10.md).
+
+### Two-factor, passkeys and Google
+
+Everyone can turn on two-factor under **Account → Security**: an authenticator app (any TOTP app such as Aegis, 2FAS, Google Authenticator or 1Password) and/or **passkeys** (fingerprint, face, screen lock or a security key). Passkeys also sign you in without a password. The owner can require two-factor for every account.
+
+- Passkeys need the app to be opened over **HTTPS** (or at `http://localhost`), because browsers don't offer them on plain-HTTP network addresses.
+- **Google sign-in** is optional; [docs/guides/google-sign-in.md](docs/guides/google-sign-in.md) explains the Google Cloud setup.
+- Upgrading from an earlier version? Run `sh scripts/gen-secrets.sh` once to add the new (empty) Google secret file. Existing secrets are never changed.
 
 ### The V4.1 prototype
 

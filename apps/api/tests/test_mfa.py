@@ -243,3 +243,26 @@ async def test_new_tables_are_isolated_and_flows_unreachable(
     async with app_engine.begin() as conn:
         with pytest.raises(DBAPIError, match="permission denied"):
             await conn.execute(text("SELECT * FROM auth_flows"))
+
+
+async def test_sign_in_responses_say_when_two_factor_setup_is_due(
+    owner: httpx2.AsyncClient, new_client: ClientFactory
+) -> None:
+    await enable_totp(owner)
+    await owner.put("/api/admin/settings", json={"require_mfa": True})
+    invite = (await owner.post("/api/invites", json={})).json()
+    joined = await new_client().post(
+        "/api/auth/register",
+        json={
+            "invite_token": invite["token"],
+            "email": "late@example.com",
+            "display_name": "Late",
+            "password": "another long password",
+        },
+    )
+    assert joined.status_code == 201
+    assert joined.json()["mfa_setup_required"] is True
+    again = await new_client().post(
+        "/api/auth/login", json={"email": "late@example.com", "password": "another long password"}
+    )
+    assert again.json()["mfa_setup_required"] is True
