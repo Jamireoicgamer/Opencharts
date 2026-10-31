@@ -53,6 +53,17 @@ curl -sf -b "$jar" "$base/api/auth/me" | grep -q smoke@example.com || fail "sess
 curl -sf -b "$jar" "$base/api/secrets" | grep -q '1234"' || fail "secret hint"
 [ "$(post POST /api/auth/logout '{}')" = 204 ] || fail "logout"
 
+# Containers run as non-root users on read-only filesystems.
+[ "$(docker compose exec -T api id -u)" = 10001 ] || fail "api should run as uid 10001"
+[ "$(docker compose exec -T web id -u)" != 0 ] || fail "web should not run as root"
+if docker compose exec -T api sh -c 'echo x > /app/probe' 2>/dev/null; then
+    fail "api filesystem should be read-only"
+fi
+if docker compose exec -T web sh -c 'echo x > /usr/share/nginx/html/probe' 2>/dev/null; then
+    fail "web filesystem should be read-only"
+fi
+curl -sI "$base/api/health" | grep -qi '^server: uvicorn' && fail "API server header should be hidden"
+
 # Only the web container is published; the API and database are internal.
 if curl -s -o /dev/null --max-time 2 http://127.0.0.1:8000/api/health; then
     fail "API port should not be published"

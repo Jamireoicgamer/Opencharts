@@ -7,11 +7,12 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from openchart_api.auth import SESSION_COOKIE
-
 from .conftest import ORIGIN, OWNER, ClientFactory
 
 pytestmark = pytest.mark.anyio
+
+# Plain-HTTP name; over HTTPS the cookie is __Host-oc_session (see test_security_audit).
+SESSION_COOKIE = "oc_session"
 
 LOGIN = {"email": OWNER["email"], "password": OWNER["password"]}
 
@@ -132,12 +133,13 @@ async def test_cross_site_writes_are_blocked(
 
 
 async def test_public_origin_is_enforced(app: FastAPI, owner: httpx2.AsyncClient) -> None:
-    app.state.settings = app.state.settings.model_copy(
-        update={"public_origin": "https://charts.example.com"}
-    )
-    blocked = await owner.post("/api/auth/sessions/revoke-others")
+    # An http:// origin keeps the plain cookie name (https switches to __Host-).
+    origin = "http://charts.example.com"
+    app.state.settings = app.state.settings.model_copy(update={"public_origin": origin})
+    host = {"Host": "charts.example.com"}
+    blocked = await owner.post("/api/auth/sessions/revoke-others", headers=host)
     allowed = await owner.post(
-        "/api/auth/sessions/revoke-others", headers={"Origin": "https://charts.example.com"}
+        "/api/auth/sessions/revoke-others", headers={**host, "Origin": origin}
     )
     assert blocked.status_code == 403
     assert allowed.status_code == 200

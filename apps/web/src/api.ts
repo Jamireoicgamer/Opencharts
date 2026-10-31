@@ -67,6 +67,9 @@ interface ValidationIssue {
   msg?: string;
 }
 
+/** Dispatched on window when the API says the session is gone (signed out elsewhere, expired). */
+export const SESSION_ENDED_EVENT = 'openchart:session-ended';
+
 function errorMessage(status: number, body: unknown): string {
   const detail = (body as { detail?: unknown } | null)?.detail;
   if (typeof detail === 'string') return detail;
@@ -77,6 +80,7 @@ function errorMessage(status: number, body: unknown): string {
       ? `${String(field).replace('_', ' ')}: ${issue.msg ?? 'invalid'}`
       : (issue.msg ?? 'Invalid input');
   }
+  if (status === 429) return 'Too many attempts. Try again later.';
   return status >= 500 ? 'The server had a problem. Try again.' : `Request failed (${status})`;
 }
 
@@ -92,7 +96,15 @@ export async function api<T = void>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await response.text();
-  const parsed: unknown = text ? JSON.parse(text) : null;
-  if (!response.ok) throw new ApiError(response.status, errorMessage(response.status, parsed));
+  let parsed: unknown = null;
+  try {
+    parsed = text ? JSON.parse(text) : null;
+  } catch {
+    // Not JSON: an error page from the proxy (e.g. 429 or 502). Keep parsed null.
+  }
+  if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new Event(SESSION_ENDED_EVENT));
+    throw new ApiError(response.status, errorMessage(response.status, parsed));
+  }
   return parsed as T;
 }

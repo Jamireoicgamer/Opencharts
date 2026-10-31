@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useId, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
-import { ApiError } from '../api';
+import { useId, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import { BrandMark } from './BrandMark';
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -32,26 +32,6 @@ export function ErrorMessage({ message }: { message: string | null }) {
   );
 }
 
-/** Runs an async submit handler with a busy flag and a user-facing error message. */
-export function useSubmit<T extends unknown[]>(handler: (...args: T) => Promise<void>) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function run(...args: T) {
-    setBusy(true);
-    setError(null);
-    try {
-      await handler(...args);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return { busy, error, run };
-}
-
 export function formValues(event: FormEvent<HTMLFormElement>): Record<string, string> {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
@@ -71,9 +51,7 @@ export function AuthCard({
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="brand auth-brand">
-          <svg className="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 3v18h18M6.5 15.5l4.2-4.2 3.5 2.2L20 6" />
-          </svg>
+          <BrandMark />
           OpenChart AI
         </div>
         <h1 id="auth-title">{title}</h1>

@@ -29,4 +29,8 @@ jobs:
           path-to-document: https://github.com/jamireoicgamer/opencharts/blob/main/CLA.md
           path-to-signatures: signatures/version1/cla.json
           branch: cla-signatures
-          allowlist: Jamireoicgamer,claude,dependabot[bot],github-actions[bot]
+          # Exact, case-sensitive GitHub logins, or the author name for commits
+          # not linked to an account (commits made with Claude Code: "Claude").
+          # A name match can be spoofed: before merging an outside PR, check
+          # that any "Claude" commits really came from the maintainer.
+          allowlist: Jamireoicgamer,Claude,dependabot[bot],github-actions[bot]
