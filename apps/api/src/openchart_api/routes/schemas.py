@@ -32,6 +32,8 @@ class Me(BaseModel):
     email: str
     display_name: str
     role: Literal["owner", "admin", "member"]
+    # The owner requires two-factor and this user must set it up first.
+    mfa_setup_required: bool = False
 
     @classmethod
     def of(cls, user: object) -> "Me":
