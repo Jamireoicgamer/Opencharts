@@ -7,7 +7,10 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, StringConstraints
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
 
+from openchart_api.auth import mfa_setup_required
 from openchart_api.security import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 Email = Annotated[
@@ -32,11 +35,27 @@ class Me(BaseModel):
     email: str
     display_name: str
     role: Literal["owner", "admin", "member"]
+    # The owner requires two-factor and this user must set it up first.
+    mfa_setup_required: bool = False
 
     @classmethod
     def of(cls, user: object) -> "Me":
         """Build from any object with matching attributes (a row, CurrentUser…)."""
         return cls.model_validate(user, from_attributes=True)
+
+    @classmethod
+    async def signed_in(cls, conn: AsyncConnection, user_id: UUID) -> "Me":
+        """The newly signed-in user, as /auth/me would report them.
+        Expects the RLS context to be the user's."""
+        row = (
+            await conn.execute(
+                text("SELECT id, email, display_name, role FROM users WHERE id = :id"),
+                {"id": user_id},
+            )
+        ).one()
+        me = cls.of(row)
+        me.mfa_setup_required = await mfa_setup_required(conn, user_id)
+        return me
 
 
 class NewAccount(BaseModel):

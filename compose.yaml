@@ -59,9 +59,12 @@ services:
     restart: unless-stopped
     environment:
       OPENCHART_PUBLIC_ORIGIN: ${OPENCHART_PUBLIC_ORIGIN:-}
+      # Optional Google sign-in; see docs/guides/google-sign-in.md.
+      OPENCHART_GOOGLE_CLIENT_ID: ${OPENCHART_GOOGLE_CLIENT_ID:-}
     secrets:
       - openchart_database_url
       - openchart_master_key
+      - openchart_google_client_secret
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -102,6 +105,9 @@ secrets:
     file: ./secrets/openchart_database_url
   openchart_master_key:
     file: ./secrets/openchart_master_key
+  # Empty unless you set up Google sign-in.
+  openchart_google_client_secret:
+    file: ./secrets/openchart_google_client_secret
 
 volumes:
   postgres-data:

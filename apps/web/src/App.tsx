@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router';
+import { ReauthProvider } from './components/Reauth';
 import { TopBar } from './components/TopBar';
 import { AccountPage } from './pages/account';
 import { HomePage } from './pages/Home';
@@ -40,16 +41,21 @@ function SignedIn() {
   if (session.status === 'needs-setup') return <Navigate to="/setup" replace />;
   if (session.status === 'signed-out')
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  // The owner requires two-factor: nothing else until it is set up.
+  if (session.user.mfa_setup_required && location.pathname !== '/account/security')
+    return <Navigate to="/account/security" replace />;
 
   return (
-    <div className="shell">
-      <TopBar />
-      <Routes>
-        <Route index element={<HomePage />} />
-        <Route path="account/*" element={<AccountPage user={session.user} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
+    <ReauthProvider>
+      <div className="shell">
+        <TopBar />
+        <Routes>
+          <Route index element={<HomePage />} />
+          <Route path="account/*" element={<AccountPage user={session.user} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </ReauthProvider>
   );
 }
 

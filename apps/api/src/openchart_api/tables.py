@@ -8,6 +8,7 @@ checks that these definitions match the migrated database.
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     FetchedValue,
@@ -18,7 +19,7 @@ from sqlalchemy import (
     Text,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, CITEXT, JSONB
 
 metadata = MetaData()
 
@@ -46,6 +47,7 @@ sessions = Table(
     Column("revoked_at", DateTime(timezone=True)),
     Column("user_agent", Text),
     Column("ip", Text),
+    Column("reauth_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
 )
 
 invites = Table(
@@ -93,4 +95,77 @@ audit_log = Table(
     # Anonymous events (user_id NULL) are not readable by the app role, and
     # Postgres checks the read policy on RETURNING rows, so never use it here.
     implicit_returning=False,
+)
+
+mfa_totp = Table(
+    "mfa_totp",
+    metadata,
+    Column("user_id", Uuid, primary_key=True),
+    Column("ciphertext", LargeBinary, nullable=False),
+    Column("nonce", LargeBinary, nullable=False),
+    Column("wrapped_dek", LargeBinary, nullable=False),
+    Column("dek_nonce", LargeBinary, nullable=False),
+    Column("key_version", Integer, nullable=False),
+    Column("confirmed_at", DateTime(timezone=True)),
+    Column("last_used_step", BigInteger, nullable=False, server_default=FetchedValue()),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+mfa_recovery_codes = Table(
+    "mfa_recovery_codes",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("code_hash", LargeBinary, nullable=False),
+    Column("used_at", DateTime(timezone=True)),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+webauthn_credentials = Table(
+    "webauthn_credentials",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("credential_id", LargeBinary, nullable=False),
+    Column("public_key", LargeBinary, nullable=False),
+    Column("sign_count", BigInteger, nullable=False, server_default=FetchedValue()),
+    Column("transports", ARRAY(Text), nullable=False, server_default=FetchedValue()),
+    Column("name", Text, nullable=False),
+    Column("backed_up", Boolean, nullable=False, server_default=FetchedValue()),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+    Column("last_used_at", DateTime(timezone=True)),
+)
+
+oauth_identities = Table(
+    "oauth_identities",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("provider", Text, nullable=False),
+    Column("subject", Text, nullable=False),
+    Column("email", CITEXT),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+    Column("last_used_at", DateTime(timezone=True)),
+)
+
+server_settings = Table(
+    "server_settings",
+    metadata,
+    Column("id", Boolean, primary_key=True),
+    Column("require_mfa", Boolean, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+# Only reachable through the auth_flow_* SQL functions; defined here so the
+# schema check covers it.
+auth_flows = Table(
+    "auth_flows",
+    metadata,
+    Column("token_hash", LargeBinary, primary_key=True),
+    Column("kind", Text, nullable=False),
+    Column("user_id", Uuid),
+    Column("data", JSONB, nullable=False),
+    Column("attempts", Integer, nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
 )

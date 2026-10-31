@@ -135,7 +135,9 @@ async def db(database: Database, admin_engine: AsyncEngine) -> Database:
     async with admin_engine.begin() as conn:
         # Replica mode skips the audit log's append-only triggers.
         await conn.execute(text("SET LOCAL session_replication_role = replica"))
-        await conn.execute(text("TRUNCATE users, sessions, invites, vault_secrets, audit_log"))
+        # CASCADE empties every table that references users.
+        await conn.execute(text("TRUNCATE users, audit_log CASCADE"))
+        await conn.execute(text("UPDATE server_settings SET require_mfa = false"))
     return database
 
 

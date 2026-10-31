@@ -30,4 +30,7 @@ app=$(cat "$dir/postgres_app_password")
 write openchart_migrate_database_url "postgresql+asyncpg://openchart_owner:$owner@postgres:5432/openchart"
 write openchart_database_url "postgresql+asyncpg://openchart_app:$app@postgres:5432/openchart"
 
+# Optional: paste your Google OAuth client secret here to enable Google sign-in.
+write openchart_google_client_secret ""
+
 echo "Back up secrets/openchart_master_key somewhere safe."

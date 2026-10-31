@@ -24,9 +24,10 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Security audit and fixes ([October 2026 report](security/AUDIT-2026-10.md))
 
 ## M1b — Stronger sign-in
-- [ ] Google sign-in (OIDC)
-- [ ] TOTP two-factor authentication
-- [ ] Passkeys (WebAuthn)
+- [x] Two-factor with an authenticator app (TOTP) and single-use recovery codes
+- [x] Passkeys (WebAuthn): passwordless sign-in and second factor
+- [x] Google sign-in (OIDC with PKCE): explicit linking or joining by invite
+- [x] Owner switch to require two-factor for everyone; recent sign-in needed for sensitive changes
 
 ## M2 — Web app shell
 - [ ] React + TypeScript port of every V4 panel, backed by the API

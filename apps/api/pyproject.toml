@@ -10,9 +10,14 @@ dependencies = [
     "asyncpg>=0.29",
     "cryptography>=43",
     "fastapi>=0.115",
+    "httpx2>=2.13",
+    "pyjwt[crypto]>=2.10",
+    "pyotp>=2.9",
     "pydantic-settings>=2.4",
+    "segno>=1.6",
     "sqlalchemy[asyncio]>=2.0.30",
     "uvicorn[standard]>=0.30",
+    "webauthn>=2.5",
 ]
 
 [project.scripts]

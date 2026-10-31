@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { api, type Me } from '../api';
 import { AuthCard, ErrorMessage, Field, formValues } from '../components/Form';
+import { GoogleButton, googleErrorFromHash, useGoogleAvailable } from '../components/Google';
 import { useSubmit } from '../hooks';
 import { useSession } from '../session';
 
@@ -16,6 +17,9 @@ export function RegisterPage() {
       new URLSearchParams(location.hash.slice(1)).get('invite') ??
       new URLSearchParams(location.search).get('invite'),
   );
+  // Read before the address bar is cleaned below.
+  const [googleError] = useState(() => googleErrorFromHash(location.hash));
+  const google = useGoogleAvailable();
   // Remove the token from the address bar, history and any bookmark.
   useEffect(() => {
     if (location.hash || location.search) void navigate(location.pathname, { replace: true });
@@ -30,6 +34,7 @@ export function RegisterPage() {
         title="Invite needed"
         intro="Accounts on this server are created from invite links."
       >
+        <ErrorMessage message={googleError} />
         <Link className="button" to="/login">
           Back to sign in
         </Link>
@@ -60,6 +65,11 @@ export function RegisterPage() {
           {busy ? 'Creating…' : 'Create account'}
         </button>
       </form>
+      {google && (
+        <div className="auth-alternatives">
+          <GoogleButton purpose="register" inviteToken={invite} label="Join with Google" />
+        </div>
+      )}
     </AuthCard>
   );
 }

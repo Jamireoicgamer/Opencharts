@@ -9,8 +9,9 @@ from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from openchart_api import audit
-from openchart_api.auth import SettingsDep, User, clear_session_cookie, sign_in
-from openchart_api.db import Conn
+from openchart_api.auth import SessionUser, SettingsDep, User, clear_session_cookie, sign_in
+from openchart_api.db import Conn, set_rls_context
+from openchart_api.routes.mfa_login import MfaRequired, begin_second_factor
 from openchart_api.routes.schemas import (
     AnyPassword,
     Email,
@@ -44,7 +45,7 @@ class RevokedCount(BaseModel):
 @router.post("/login", responses={401: {}, 429: {}})
 async def login(
     body: LoginRequest, request: Request, response: Response, conn: Conn, settings: SettingsDep
-) -> Me:
+) -> Me | MfaRequired:
     limiter = request.app.state.failure_limiter
     ip = audit.client_ip(request)
     if wait := limiter.retry_after(ip, body.email):
@@ -70,14 +71,29 @@ async def login(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, INVALID_LOGIN)
 
     limiter.reset(ip, body.email)
+    await set_rls_context(conn, row.id, row.role)
+    if second := await begin_second_factor(
+        conn, response, settings, user_id=row.id, role=row.role, first_factor="password"
+    ):
+        # No session yet: the password alone is not enough for this account.
+        return second
     await sign_in(
-        conn, request, response, settings, user_id=row.id, role=row.role, action="auth.login"
+        conn,
+        request,
+        response,
+        settings,
+        user_id=row.id,
+        role=row.role,
+        action="auth.login",
+        metadata={"methods": ["password"]},
     )
-    return Me.of(row)
+    return await Me.signed_in(conn, row.id)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(user: User, request: Request, conn: Conn, settings: SettingsDep) -> Response:
+async def logout(
+    user: SessionUser, request: Request, conn: Conn, settings: SettingsDep
+) -> Response:
     await conn.execute(
         update(sessions).where(sessions.c.id == user.session_id).values(revoked_at=func.now())
     )
@@ -88,7 +104,7 @@ async def logout(user: User, request: Request, conn: Conn, settings: SettingsDep
 
 
 @router.get("/me")
-async def me(user: User) -> Me:
+async def me(user: SessionUser) -> Me:
     return Me.of(user)
 
 
@@ -137,9 +153,7 @@ async def register(
         action="auth.registered",
         metadata={"role": row.new_user_role},
     )
-    return Me(
-        id=row.new_user_id, email=body.email, display_name=body.display_name, role=row.new_user_role
-    )
+    return await Me.signed_in(conn, row.new_user_id)
 
 
 @router.get("/sessions")
