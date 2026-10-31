@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { ReauthProvider } from './components/Reauth';
 import { TopBar } from './components/TopBar';
 import { AccountPage } from './pages/account';
-import { HomePage } from './pages/Home';
+import { Workspace } from './workspace/Workspace';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
 import { SetupPage } from './pages/Setup';
@@ -50,7 +50,7 @@ function SignedIn() {
       <div className="shell">
         <TopBar />
         <Routes>
-          <Route index element={<HomePage />} />
+          <Route index element={<Workspace />} />
           <Route path="account/*" element={<AccountPage user={session.user} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

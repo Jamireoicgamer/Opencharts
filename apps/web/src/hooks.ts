@@ -11,6 +11,14 @@ export class Cancelled extends Error {
   }
 }
 
+/** An error whose message is written for the person, e.g. "That file is not valid JSON." */
+export class UserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UserError';
+  }
+}
+
 /** Runs an async submit handler with a busy flag and a user-facing error message. */
 export function useSubmit<T extends unknown[]>(handler: (...args: T) => Promise<void>) {
   const [busy, setBusy] = useState(false);
@@ -24,7 +32,7 @@ export function useSubmit<T extends unknown[]>(handler: (...args: T) => Promise<
     } catch (err) {
       if (err instanceof Cancelled) return;
       setError(
-        err instanceof ApiError
+        err instanceof ApiError || err instanceof UserError
           ? err.message
           : (passkeyErrorMessage(err) ?? 'Something went wrong. Try again.'),
       );
@@ -58,5 +66,11 @@ export function useLoad<T>(load: () => Promise<T>) {
     };
   }, [load, version]);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
-  return { ...state, reload };
+  /** Change the loaded data locally, e.g. with what the API returned after a change. */
+  const setData = useCallback(
+    (update: (data: T | null) => T | null) =>
+      setState((prev) => ({ ...prev, data: update(prev.data) })),
+    [],
+  );
+  return { ...state, reload, setData };
 }

@@ -19,3 +19,13 @@ createRoot(root).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// Installable app with an offline shell. Only in production builds: the dev
+// server's modules change on every edit.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Not fatal: the app works without it.
+    });
+  });
+}
