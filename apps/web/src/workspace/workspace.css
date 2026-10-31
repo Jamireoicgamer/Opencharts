@@ -245,6 +245,8 @@
   gap: 8px;
   max-width: 440px;
   padding: 24px;
+  border-radius: 12px;
+  background: var(--surface);
   text-align: center;
 }
 
@@ -482,6 +484,22 @@ label.field > span {
 .field textarea:focus {
   border-color: var(--accent);
   outline: none;
+}
+
+/* Grid children shrink to fit; without this, inputs keep their intrinsic
+   width and push the panel sideways. */
+.panel-body > *,
+.grid-fields > *,
+.field > input,
+.field > select,
+.field > textarea {
+  min-width: 0;
+}
+
+.field > input,
+.field > select,
+.field > textarea {
+  width: 100%;
 }
 
 .grid-fields {

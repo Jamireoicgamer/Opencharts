@@ -69,6 +69,7 @@ export function PortfolioPanel({ onClose }: { onClose: () => void }) {
         <label className="metric">
           <span>RISK PROFILE</span>
           <select
+            aria-label="Risk profile"
             value={prefs.risk_profile}
             onChange={(e) => void updatePrefs({ risk_profile: e.target.value as RiskProfile })}
           >

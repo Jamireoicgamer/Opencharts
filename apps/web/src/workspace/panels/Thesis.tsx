@@ -4,7 +4,7 @@
 import { useCallback, useState, type InputHTMLAttributes } from 'react';
 import { api } from '../../api';
 import { ErrorMessage } from '../../components/Form';
-import { amount, plain, when } from '../../format';
+import { money, plain, when } from '../../format';
 import { useLoad, useSubmit } from '../../hooks';
 import { useWorkspace } from '../context';
 import { NoInstrument, Panel } from '../Panel';
@@ -239,9 +239,9 @@ function ThesisBody({
                   {v.summary && <p className="version-text">{v.summary}</p>}
                   {(v.fair_value || v.entry_price) && (
                     <p className="version-meta muted">
-                      {v.fair_value && `Fair value ${amount(v.fair_value)} ${instrument.currency}`}
+                      {v.fair_value && `Fair value ${money(v.fair_value, instrument.currency)}`}
                       {v.fair_value && v.entry_price && ' · '}
-                      {v.entry_price && `Entry ${amount(v.entry_price)} ${instrument.currency}`}
+                      {v.entry_price && `Entry ${money(v.entry_price, instrument.currency)}`}
                     </p>
                   )}
                   <button

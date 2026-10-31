@@ -82,7 +82,7 @@ describe('stage and search', () => {
     await screen.findByRole('button', { name: /Choose an instrument/ });
     const user = userEvent.setup();
     await user.keyboard('{Control>}k{/Control}');
-    const search = screen.getByRole('combobox');
+    const search = screen.getByRole('combobox', { name: 'Search instruments' });
     await user.type(search, 'nvi');
     expect(await screen.findByRole('option', { name: /NVIDIA/ })).toHaveAttribute(
       'aria-selected',
