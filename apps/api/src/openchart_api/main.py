@@ -20,7 +20,8 @@ from sqlalchemy import text
 from openchart_api.auth import check_host, csrf_protect
 from openchart_api.config import Settings
 from openchart_api.db import check_database, create_engine
-from openchart_api.routes import audit_log, auth, invites, setup
+from openchart_api.oidc import GoogleClient
+from openchart_api.routes import audit_log, auth, google, invites, mfa_login, security, setup
 from openchart_api.routes import secrets as secrets_routes
 from openchart_api.security import FailureLimiter
 
@@ -76,6 +77,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.failure_limiter = FailureLimiter()
+    app.state.oidc = (
+        GoogleClient(
+            settings.google_client_id or "",
+            settings.google_client_secret.get_secret_value()
+            if settings.google_client_secret
+            else "",
+        )
+        if settings.google_enabled
+        else None
+    )
 
     @app.middleware("http")
     async def no_store(
@@ -94,7 +105,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Liveness check used by the web app and container health checks."""
         return Health(status="ok", version=__version__)
 
-    for module in (setup, auth, invites, secrets_routes, audit_log):
+    for module in (setup, auth, mfa_login, google, security, invites, secrets_routes, audit_log):
         api.include_router(module.router)
+    api.include_router(security.admin_router)
     app.include_router(api)
     return app

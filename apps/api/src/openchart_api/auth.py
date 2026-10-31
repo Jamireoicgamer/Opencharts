@@ -25,6 +25,9 @@ _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 _LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
+REAUTH_WINDOW = timedelta(minutes=10)
+
+
 @dataclass(frozen=True)
 class CurrentUser:
     id: UUID
@@ -32,6 +35,8 @@ class CurrentUser:
     display_name: str
     role: Role
     session_id: UUID
+    # The owner requires two-factor and this user has not set it up yet.
+    mfa_setup_required: bool = False
 
 
 def get_settings(request: Request) -> Settings:
@@ -101,7 +106,8 @@ def clear_session_cookie(response: Response, settings: Settings) -> None:
     )
 
 
-async def current_user(request: Request, conn: Conn, settings: SettingsDep) -> CurrentUser:
+async def session_user(request: Request, conn: Conn, settings: SettingsDep) -> CurrentUser:
+    """The signed-in user, even if they still have to set up two-factor."""
     token = request.cookies.get(session_cookie(settings))
     if not token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not signed in")
@@ -117,10 +123,78 @@ async def current_user(request: Request, conn: Conn, settings: SettingsDep) -> C
         .where(sessions.c.last_seen_at < func.now() - _TOUCH_INTERVAL)
         .values(last_seen_at=func.now())
     )
-    return CurrentUser(row.user_id, row.email, row.display_name, row.role, row.session_id)
+    setup_required = await conn.scalar(
+        text(
+            "SELECT s.require_mfa AND NOT ("
+            "  EXISTS (SELECT 1 FROM mfa_totp WHERE user_id = :u AND confirmed_at IS NOT NULL)"
+            "  OR EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id = :u))"
+            " FROM server_settings s"
+        ),
+        {"u": row.user_id},
+    )
+    return CurrentUser(
+        row.user_id,
+        row.email,
+        row.display_name,
+        row.role,
+        row.session_id,
+        mfa_setup_required=bool(setup_required),
+    )
+
+
+SessionUser = Annotated[CurrentUser, Depends(session_user)]
+
+
+async def current_user(user: SessionUser) -> CurrentUser:
+    """The signed-in user. While the server requires two-factor and this user
+    has none, everything except the security settings is refused."""
+    if user.mfa_setup_required:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "mfa_setup_required")
+    return user
 
 
 User = Annotated[CurrentUser, Depends(current_user)]
+
+
+async def require_recent_auth(user: SessionUser, conn: Conn) -> CurrentUser:
+    """For sensitive changes: the user must have proved who they are recently."""
+    recent = await conn.scalar(
+        text("SELECT reauth_at > now() - CAST(:window AS interval) FROM sessions WHERE id = :id"),
+        {"window": REAUTH_WINDOW, "id": user.session_id},
+    )
+    if not recent:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "reauth_required")
+    return user
+
+
+RecentAuth = Annotated[CurrentUser, Depends(require_recent_auth)]
+
+
+async def mark_reauthenticated(conn: AsyncConnection, session_id: UUID) -> None:
+    await conn.execute(
+        update(sessions).where(sessions.c.id == session_id).values(reauth_at=func.now())
+    )
+
+
+def set_flow_cookie(
+    response: Response, settings: Settings, name: str, token: str, max_age: int
+) -> None:
+    """Binds a short-lived sign-in step (second factor, passkey, OAuth) to this browser."""
+    response.set_cookie(
+        name,
+        token,
+        max_age=max_age,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        path="/api/",
+    )
+
+
+def clear_flow_cookie(response: Response, settings: Settings, name: str) -> None:
+    response.delete_cookie(
+        name, httponly=True, secure=settings.cookie_secure, samesite="lax", path="/api/"
+    )
 
 
 def require_role(*roles: Role) -> Callable[[CurrentUser], Awaitable[CurrentUser]]:
