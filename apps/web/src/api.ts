@@ -8,6 +8,45 @@ export interface Me {
   email: string;
   display_name: string;
   role: Role;
+  /** The owner requires two-factor and this user has not set it up yet. */
+  mfa_setup_required?: boolean;
+}
+
+export type SecondFactor = 'totp' | 'passkey' | 'recovery';
+
+export interface MfaRequired {
+  mfa_required: true;
+  methods: SecondFactor[];
+}
+
+export const needsSecondFactor = (r: Me | MfaRequired): r is MfaRequired => 'mfa_required' in r;
+
+export interface PasskeyInfo {
+  id: string;
+  name: string;
+  backed_up: boolean;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface SecurityStatus {
+  has_password: boolean;
+  totp: boolean;
+  passkeys: PasskeyInfo[];
+  google_email: string | null;
+  recovery_codes_left: number;
+  require_mfa: boolean;
+  google_available: boolean;
+}
+
+export interface TotpSetup {
+  secret: string;
+  uri: string;
+  qr_svg: string;
+}
+
+export interface RecoveryCodes {
+  recovery_codes: string[] | null;
 }
 
 export interface SessionInfo {
@@ -69,6 +108,10 @@ interface ValidationIssue {
 
 /** Dispatched on window when the API says the session is gone (signed out elsewhere, expired). */
 export const SESSION_ENDED_EVENT = 'openchart:session-ended';
+/** Dispatched when the owner has made two-factor mandatory and this user has none yet. */
+export const MFA_SETUP_REQUIRED_EVENT = 'openchart:mfa-setup-required';
+/** API detail for actions that need the user to confirm who they are again. */
+export const REAUTH_REQUIRED = 'reauth_required';
 
 function errorMessage(status: number, body: unknown): string {
   const detail = (body as { detail?: unknown } | null)?.detail;
@@ -85,7 +128,7 @@ function errorMessage(status: number, body: unknown): string {
 }
 
 export async function api<T = void>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<T> {
@@ -103,8 +146,10 @@ export async function api<T = void>(
     // Not JSON: an error page from the proxy (e.g. 429 or 502). Keep parsed null.
   }
   if (!response.ok) {
+    const message = errorMessage(response.status, parsed);
     if (response.status === 401) window.dispatchEvent(new Event(SESSION_ENDED_EVENT));
-    throw new ApiError(response.status, errorMessage(response.status, parsed));
+    if (message === 'mfa_setup_required') window.dispatchEvent(new Event(MFA_SETUP_REQUIRED_EVENT));
+    throw new ApiError(response.status, message);
   }
   return parsed as T;
 }
