@@ -21,6 +21,7 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Encrypted secrets vault and append-only audit log
 - [x] Web pages for setup, sign-in, invites, devices, API keys and activity
 - [x] Docker Compose stack (Postgres, migrate, API, nginx), localhost-only by default, smoke-tested in CI
+- [x] Security audit and fixes ([October 2026 report](security/AUDIT-2026-10.md))
 
 ## M1b — Stronger sign-in
 - [ ] Google sign-in (OIDC)
@@ -72,6 +73,8 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 
 ## M10 — Hardening and installers
 - [ ] Encrypted backups with restore drill
+- [ ] Password reset / owner recovery command, master-key rotation, session cleanup job
+- [ ] Base images pinned by digest
 - [ ] Security, accessibility and Raspberry Pi performance audits
 - [ ] Native installers (.deb/AppImage, Homebrew, winget)
 - [ ] Financial regulatory and data redistribution review

@@ -33,6 +33,10 @@ class Invite(BaseModel):
     used_at: datetime | None
 
 
+# Everything except the token hash, which never leaves the database.
+_INVITE_COLUMNS = [invites.c[name] for name in Invite.model_fields]
+
+
 class CreatedInvite(Invite):
     # Returned once, when the invite is created. Only its hash is stored.
     token: str
@@ -59,7 +63,7 @@ async def create_invite(
                 role=body.role,
                 expires_at=datetime.now(UTC) + timedelta(hours=settings.invite_ttl_hours),
             )
-            .returning(invites)
+            .returning(*_INVITE_COLUMNS)
         )
     ).one()
     await audit.record(
@@ -70,31 +74,13 @@ async def create_invite(
         target=str(row.id),
         metadata={"role": body.role, "email": body.email},
     )
-    return CreatedInvite(
-        id=row.id,
-        email=row.email,
-        role=row.role,
-        created_at=row.created_at,
-        expires_at=row.expires_at,
-        used_at=row.used_at,
-        token=token,
-    )
+    return CreatedInvite.model_validate({**row._mapping, "token": token})
 
 
 @router.get("")
 async def list_invites(conn: Conn, user: Admin) -> list[Invite]:
-    rows = await conn.execute(select(invites).order_by(invites.c.created_at.desc()))
-    return [
-        Invite(
-            id=r.id,
-            email=r.email,
-            role=r.role,
-            created_at=r.created_at,
-            expires_at=r.expires_at,
-            used_at=r.used_at,
-        )
-        for r in rows
-    ]
+    rows = await conn.execute(select(*_INVITE_COLUMNS).order_by(invites.c.created_at.desc()))
+    return [Invite.model_validate(r, from_attributes=True) for r in rows]
 
 
 @router.delete("/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { api, type Me } from '../api';
-import { AuthCard, ErrorMessage, Field, formValues, useSubmit } from '../components/Form';
+import { AuthCard, ErrorMessage, Field, formValues } from '../components/Form';
+import { useSubmit } from '../hooks';
 import { useSession } from '../session';
 
 export function SetupPage() {

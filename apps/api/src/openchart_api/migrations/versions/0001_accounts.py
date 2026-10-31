@@ -18,10 +18,11 @@ Revises:
 Create Date: 2026-10-30
 """
 
-import re
 from collections.abc import Sequence
 
-from alembic import context, op
+from alembic import op
+
+from openchart_api.migrations.sql import app_role, run
 
 revision: str = "0001"
 down_revision: str | None = None
@@ -231,42 +232,10 @@ DROP FUNCTION app_user_id();
 """
 
 
-def _statements(sql: str) -> list[str]:
-    """Split a script into single statements (asyncpg prepares each one).
-
-    Statements end with ``;`` at the end of a line; semicolons inside
-    ``$$``-quoted function bodies are left alone.
-    """
-    statements, current = [], []
-    for line in sql.splitlines():
-        current.append(line)
-        chunk = "\n".join(current)
-        if line.rstrip().endswith(";") and chunk.count("$$") % 2 == 0:
-            body = chunk.strip().removesuffix(";").strip()
-            if body and not all(ln.lstrip().startswith("--") for ln in body.splitlines()):
-                statements.append(body)
-            current = []
-    if "\n".join(current).strip():
-        raise ValueError("SQL script does not end with a complete statement")
-    return statements
-
-
-def _run(sql: str) -> None:
-    for statement in _statements(sql):
-        op.execute(statement)
-
-
-def _app_role() -> str:
-    role = str(context.config.attributes["app_role"])
-    if not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", role):
-        raise ValueError(f"unsafe app role name: {role!r}")
-    return role
-
-
 def upgrade() -> None:
-    _run(SCHEMA)
-    _run(GRANTS.format(role=_app_role()))
+    run(op, SCHEMA)
+    run(op, GRANTS.format(role=app_role()))
 
 
 def downgrade() -> None:
-    _run(DROP)
+    run(op, DROP)
