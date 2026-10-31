@@ -332,6 +332,12 @@ Each milestone is roughly 3–8 small PRs. A PR should be reviewable in one sitt
 - Source / timestamp / delay labels in the UI.
 - **Done when:** BTC streams live, NVDA and BAE show correctly labelled delayed quotes, and history loads from cache.
 
+### M3½ — Desktop app (added October 2026)
+- A Windows and macOS app (Tauri) for people who want OpenChart on one laptop or PC without running a server or Docker.
+- Bundles the API with an embedded database; one local user; signed builds with automatic updates.
+- Moves data to and from a server with the workspace export/import.
+- **Done when:** a fresh Windows and macOS machine can install it, sign in, keep a watchlist and see live prices with nothing else installed.
+
 ### M4 — Pro charting
 - Lightweight Charts engine + overlay canvas.
 - Indicators package with cross-language tests.

@@ -2,7 +2,7 @@
 
 A minimal, near-black, chart-first, self-hosted investment terminal with AI research — in early development.
 
-> **Status:** the new app currently provides accounts and security (milestones M1a and M1b): owner setup, invite-only accounts, two-factor sign-in with an authenticator app or passkeys, passwordless passkey sign-in, optional Google sign-in, signed-in device management, an encrypted vault for API keys and a security activity log. **Market data, charts and AI arrive in later milestones**; nothing in the new app is simulated, so the chart area stays empty until a data source exists. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
+> **Status:** the new app provides accounts and security (milestones M1a and M1b) and the research workspace (M2): a watchlist, a versioned thesis journal, research checklists and notes, holdings and price alerts, all saved on your server and synced between devices, with instrument search (Ctrl/⌘ K), JSON export, import from the prototype, and an installable app on phones and desktops. Sign-in covers invite-only accounts, two-factor with an authenticator app or passkeys, passwordless passkeys and optional Google sign-in. **Live market data, charts and AI arrive in later milestones**; nothing in the new app is simulated, so the chart area stays empty and alerts wait until a data source exists. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
 
 The V4.1 interface prototype — simulated prices and scripted AI, browser storage only — is kept in `legacy/` as the design reference.
 
@@ -65,6 +65,8 @@ docker compose --profile legacy up -d legacy
 ```
 
 It is served on port 8081. It has **no authentication**; do not enter real data or keys into it.
+
+Moving your watchlist, theses, research, holdings and alerts from the prototype into the new app takes a minute: see [docs/guides/import-from-prototype.md](docs/guides/import-from-prototype.md).
 
 ## Design goals
 
