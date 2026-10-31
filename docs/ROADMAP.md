@@ -30,15 +30,21 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Owner switch to require two-factor for everyone; recent sign-in needed for sensitive changes
 
 ## M2 — Web app shell
-- [ ] React + TypeScript port of every V4 panel, backed by the API
-- [ ] Import existing browser-local data
-- [ ] Installable PWA
+- [x] React + TypeScript port of every V4 panel, backed by the API: watchlist, versioned thesis journal, research checklist and notes, holdings, price alerts, settings
+- [x] Shared instrument catalogue with canonical IDs (`LSE:BA.`, `NASDAQ:NVDA`, `CRYPTO:BTC-USD`) and Ctrl/⌘ K search
+- [x] Import existing browser-local data from the prototype ([guide](guides/import-from-prototype.md)); full JSON export
+- [x] Installable PWA with an offline app shell (the API is never cached)
 
 ## M3 — Live market data
 - [ ] Provider interface, canonical instrument IDs, GBX/GBP handling
 - [ ] Crypto WebSockets, opt-in delayed equities, first bring-your-own-key adapter
 - [ ] TimescaleDB candles, Redis fan-out, client WebSocket with polling fallback
 - [ ] Source, timestamp and delay labels on every quote
+
+## M3½ — Desktop app
+- [ ] Windows and macOS app (Tauri) that runs everything on one computer, with no server or Docker
+- [ ] Embedded database and API, signed builds, automatic updates
+- [ ] The same workspace export/import moves data between the desktop app and a server
 
 ## M4 — Pro charting
 - [ ] Lightweight Charts engine with custom overlay canvas
