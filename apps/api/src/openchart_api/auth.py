@@ -228,10 +228,7 @@ async def check_host(request: Request, settings: SettingsDep) -> None:
     This defeats DNS rebinding, where an attacker's domain is pointed at the
     server so that the attacker's page counts as "same origin".
     """
-    if settings.public_host is None:
-        return
-    host = urlsplit(f"//{request.headers.get('host', '')}").hostname or ""
-    if host not in _LOCAL_HOSTS and host != settings.public_host:
+    if not host_allowed(request.headers.get("host", ""), settings):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown host")
 
 
@@ -249,11 +246,23 @@ async def csrf_protect(request: Request, settings: SettingsDep) -> None:
     origin = request.headers.get("origin") or _origin_of(request.headers.get("referer") or "")
     if origin is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Missing Origin header")
-    host = request.headers.get("host", "")
+    if not origin_allowed(origin, request.headers.get("host", ""), settings):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Cross-origin request blocked")
+
+
+def origin_allowed(origin: str, host: str, settings: Settings) -> bool:
+    """Whether a browser Origin is the app's own (for CSRF and WebSocket checks)."""
     allowed = (
         {settings.public_origin.lower()}
         if settings.public_origin
         else {f"http://{host}".lower(), f"https://{host}".lower()}
     )
-    if origin.lower() not in allowed:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Cross-origin request blocked")
+    return origin.lower() in allowed
+
+
+def host_allowed(host_header: str, settings: Settings) -> bool:
+    """With a public origin configured, only its host (or a local one) is answered."""
+    if settings.public_host is None:
+        return True
+    host = urlsplit(f"//{host_header}").hostname or ""
+    return host in _LOCAL_HOSTS or host == settings.public_host

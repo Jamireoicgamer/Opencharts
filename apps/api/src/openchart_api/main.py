@@ -20,8 +20,19 @@ from sqlalchemy import text
 from openchart_api.auth import check_host, csrf_protect
 from openchart_api.config import Settings
 from openchart_api.db import check_database, create_engine
+from openchart_api.market.hub import Hub
 from openchart_api.oidc import GoogleClient
-from openchart_api.routes import audit_log, auth, google, invites, mfa_login, security, setup
+from openchart_api.routes import (
+    audit_log,
+    auth,
+    data_sources,
+    google,
+    invites,
+    market,
+    mfa_login,
+    security,
+    setup,
+)
 from openchart_api.routes import secrets as secrets_routes
 from openchart_api.routes.workspace import (
     alerts,
@@ -67,6 +78,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             await check_database(app.state.engine)
             app.state.setup_token = await _setup_token(app, settings)
+            app.state.hub = Hub(app.state.engine, settings.master_key_bytes)
+            if settings.market_data:
+                await app.state.hub.start()
             if settings.public_origin is None:
                 log.warning(
                     "OPENCHART_PUBLIC_ORIGIN is not set. Set it to the URL you open the app "
@@ -75,6 +89,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
             yield
         finally:
+            if hub := getattr(app.state, "hub", None):
+                await hub.stop()
             await app.state.engine.dispose()
 
     app = FastAPI(
@@ -127,7 +143,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         alerts,
         preferences,
         transfer,
+        market,
+        data_sources,
     ):
         api.include_router(module.router)
     app.include_router(api)
+    app.include_router(market.stream_router)
     return app
