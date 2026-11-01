@@ -409,9 +409,43 @@ describe('settings and the prototype import', () => {
     const pane = within(await panel('Settings'));
     expect(pane.getByText(/No prototype data found/)).toBeInTheDocument();
     const file = new File(['not json'], 'openchart-workspace.json', { type: 'application/json' });
-    await userEvent.upload(pane.getByLabelText('Upload openchart-workspace.json'), file);
+    await userEvent.upload(pane.getByLabelText('Import an OpenChart export'), file);
     expect(await pane.findByRole('alert')).toHaveTextContent('That file is not valid JSON.');
     expect(api.calls.some((c) => c.path === '/import/legacy')).toBe(false);
+  });
+
+  it('sends OpenChart exports and prototype files to their own importers', async () => {
+    const result = {
+      watchlist: 2,
+      theses: 0,
+      research: 0,
+      positions: 1,
+      alerts: 0,
+      preferences: true,
+      skipped_symbols: [],
+    };
+    const api = onBae({ 'POST /import': [200, result], 'POST /import/legacy': [200, result] });
+    renderWorkspace('/?panel=settings');
+    const pane = within(await panel('Settings'));
+    const ours = { format: 'openchart-export', version: 1, watchlist: ['LSE:BA.'] };
+    await userEvent.upload(
+      pane.getByLabelText('Import an OpenChart export'),
+      new File([JSON.stringify(ours)], 'openchart-export.json', { type: 'application/json' }),
+    );
+    const after = within(await panel('Settings'));
+    expect(
+      await after.findByText(/Imported 2 watchlist items, 1 holding, preferences\./),
+    ).toBeInTheDocument();
+    expect(api.calls.find((c) => c.path === '/import')?.body).toEqual(ours);
+
+    const prototype = { format: 'openchart-v4-preview', watchSymbols: ['BA.'] };
+    await userEvent.upload(
+      after.getByLabelText('Import an OpenChart export'),
+      new File([JSON.stringify(prototype)], 'workspace.json', { type: 'application/json' }),
+    );
+    await waitFor(() =>
+      expect(api.calls.find((c) => c.path === '/import/legacy')?.body).toEqual(prototype),
+    );
   });
 
   it('syncs appearance settings to the server', async () => {

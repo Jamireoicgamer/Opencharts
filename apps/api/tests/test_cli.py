@@ -83,3 +83,50 @@ async def test_serve_runs_and_stops_when_stdin_closes(db: Database, tmp_path: Pa
         assert await to_thread.run_sync(lambda: process.wait(timeout=15)) == 0
     finally:
         process.kill()
+
+
+async def test_bootstrap_creates_roles_and_is_idempotent(
+    env: pytest.MonkeyPatch, database: Database, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import asyncpg
+
+    from openchart_api import bootstrap
+
+    admin = database.admin_url.replace("+asyncpg", "").rsplit("/", 1)[0] + "/postgres"
+    suffix = database.app_role.removeprefix("oc_app_")
+    env.setattr(bootstrap, "OWNER_ROLE", f"oc_boot_owner_{suffix}")
+    env.setattr(bootstrap, "APP_ROLE", f"oc_boot_app_{suffix}")
+    env.setattr(bootstrap, "DATABASE", f"oc_boot_{suffix}")
+    env.setenv("OPENCHART_BOOTSTRAP_ADMIN_URL", admin)
+    env.setenv("OPENCHART_BOOTSTRAP_OWNER_PASSWORD", "owner-pw-'quoted'")
+    try:
+        for app_password in ("first-app-pw", "second-app-pw"):
+            env.setenv("OPENCHART_BOOTSTRAP_APP_PASSWORD", app_password)
+            assert await to_thread.run_sync(cli.main, ["bootstrap"]) == 0
+        assert "ready" in capsys.readouterr().out
+        host = admin.split("@", 1)[1].rsplit("/", 1)[0]
+        conn = await asyncpg.connect(
+            f"postgresql://{bootstrap.APP_ROLE}:second-app-pw@{host}/{bootstrap.DATABASE}"
+        )
+        await conn.close()
+        owner = await asyncpg.connect(
+            f"postgresql://{bootstrap.OWNER_ROLE}@{host}/{bootstrap.DATABASE}",
+            password="owner-pw-'quoted'",
+        )
+        assert await owner.fetchval("SELECT current_user") == bootstrap.OWNER_ROLE
+        await owner.close()
+    finally:
+        conn = await asyncpg.connect(admin)
+        await conn.execute(f"DROP DATABASE IF EXISTS {bootstrap.DATABASE} WITH (FORCE)")
+        await conn.execute(f"DROP ROLE IF EXISTS {bootstrap.APP_ROLE}")
+        await conn.execute(f"DROP ROLE IF EXISTS {bootstrap.OWNER_ROLE}")
+        await conn.close()
+
+
+def test_bootstrap_needs_its_settings(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for name in ("ADMIN_URL", "OWNER_PASSWORD", "APP_PASSWORD"):
+        monkeypatch.delenv(f"OPENCHART_BOOTSTRAP_{name}", raising=False)
+    assert cli.main(["bootstrap"]) == 2
+    assert "OPENCHART_BOOTSTRAP_ADMIN_URL" in capsys.readouterr().err
