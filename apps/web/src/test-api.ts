@@ -8,8 +8,28 @@ export interface FakeApi {
   calls: { method: string; path: string; body: unknown }[];
 }
 
-/** Routes are keyed like 'GET /auth/me'. Unknown routes answer 404. */
-export function mockApi(routes: Record<string, Handler | [number, unknown?]>): FakeApi {
+export const defaultPreferences = {
+  chart_type: 'candle',
+  period: '1M',
+  show_grid: true,
+  show_ohlc: false,
+  compact: false,
+  risk_profile: 'balanced',
+  last_instrument: null,
+} as const;
+
+/** What a new account's workspace returns, so signed-in screens can load. */
+const workspaceDefaults: Record<string, Handler | [number, unknown?]> = {
+  'GET /preferences': [200, defaultPreferences],
+  'GET /watchlist': [200, []],
+};
+
+/**
+ * Routes are keyed like 'GET /auth/me'. Unknown routes answer 404. An empty
+ * workspace is served unless the test gives its own routes for it.
+ */
+export function mockApi(given: Record<string, Handler | [number, unknown?]>): FakeApi {
+  const routes = { ...workspaceDefaults, ...given };
   const fake: FakeApi = { calls: [] };
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = new URL(String(input), 'http://localhost');
