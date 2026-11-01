@@ -16,7 +16,6 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isDevelopmentLink } from './links.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const desktop = resolve(here, '..');
@@ -44,11 +43,12 @@ if (!existsSync(join(pkg, 'native'))) {
 const postgres = join(build, 'postgres');
 rmSync(postgres, { recursive: true, force: true });
 cpSync(join(pkg, 'native'), postgres, { recursive: true, dereference: true });
-// The package records symlinks separately; bundles can't rely on links, so copy.
+// The package records symlinks separately; bundles can't rely on links, so copy
+// every one: the binaries load some by unversioned name (libicui18n.dylib on
+// macOS) and others by versioned name (libicudata.so.60 on Linux).
 const links = join(postgres, 'pg-symlinks.json');
 if (existsSync(links)) {
   for (const { source, target } of JSON.parse(readFileSync(links, 'utf8'))) {
-    if (isDevelopmentLink(target)) continue;
     const from = join(postgres, source.replace(/^native\//, ''));
     const to = join(postgres, target.replace(/^native\//, ''));
     if (!existsSync(to)) cpSync(from, to);
