@@ -20,7 +20,7 @@ Symbols are matched to the new instrument catalogue (`BA.` → `LSE:BA.`, `BTC/U
 1. Open the prototype (by default `http://localhost:8081`).
 2. Open **Preferences → Privacy → Export my workspace as JSON**. Your browser saves `openchart-workspace.json`.
 3. Open the new app, sign in, and choose **Settings** in the left rail (the bottom bar on a phone).
-4. Under **Import from the prototype**, upload the file. A summary shows what was added.
+4. Under **Your data**, choose **Import an OpenChart export** and pick the file. A summary shows what was added.
 
 ## Option 2: import straight from the browser
 

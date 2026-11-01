@@ -1,0 +1,80 @@
+:root {
+  color-scheme: dark;
+  --bg: #08090b;
+  --text: #e8eaed;
+  --muted: #848991;
+  --accent: #39c7a1;
+  --red: #e87780;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --text: #15171a;
+    --muted: #5d636b;
+    --accent: #138a6b;
+    --red: #b4323f;
+  }
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    15px/1.5 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+main {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+h1 {
+  margin: 8px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+#status {
+  color: var(--muted);
+  margin: 0;
+}
+.mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+.failed .mark {
+  animation: none;
+  border-color: var(--red);
+}
+#problem {
+  max-width: 520px;
+}
+#message {
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.hint {
+  color: var(--muted);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mark {
+    animation: none;
+  }
+}

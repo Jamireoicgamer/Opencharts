@@ -45,6 +45,7 @@ from openchart_api.routes.workspace import (
     watchlist,
 )
 from openchart_api.security import FailureLimiter
+from openchart_api.webapp import add_security_headers, mount_web_app
 
 __version__ = version("openchart-api")
 
@@ -162,4 +163,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         api.include_router(module.router)
     app.include_router(api)
     app.include_router(market.stream_router)
+    if settings.static_dir:
+        add_security_headers(app)
+        mount_web_app(app, settings.static_dir)
     return app

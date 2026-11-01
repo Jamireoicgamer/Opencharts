@@ -12,6 +12,9 @@ A minimal, near-black, chart-first, self-hosted investment terminal with AI rese
 >   - live watchlist prices and holding values;
 >   - price alerts checked on the server, even while the app is closed.
 >
+>
+> **New: a [desktop app](docs/guides/desktop.md) for Windows and macOS** (M3½) runs all of this on one computer, with no server or Docker. Early builds are unsigned.
+>
 > Coinbase, Kraken and Yahoo were verified live in November 2026; Twelve Data still needs testing with a real key (see the [market data guide](docs/guides/market-data.md)). **AI arrives in M5.** Nothing in the app is simulated. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
 
 The V4.1 interface prototype — simulated prices and scripted AI, browser storage only — is kept in `legacy/` as the design reference.

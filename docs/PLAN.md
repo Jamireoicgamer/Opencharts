@@ -344,6 +344,18 @@ The provider adapters, hub and cache are separate modules, so Redis fan-out and 
 - Moves data to and from a server with the workspace export/import.
 - **Done when:** a fresh Windows and macOS machine can install it, sign in, keep a watchlist and see live prices with nothing else installed.
 
+#### Decision (2026-11): real PostgreSQL inside the desktop app
+
+The desktop app bundles PostgreSQL 16 (official builds from the pinned `@embedded-postgres` npm packages, hash-checked by the pnpm lockfile) and the API frozen with PyInstaller. A Rust supervisor starts both on 127.0.0.1 with random ports.
+
+We rejected two alternatives:
+- **SQLite:** it would have meant a second data layer. Every RLS policy and `SECURITY DEFINER` function would have needed a separate implementation, and the desktop app would have been less private than the server.
+- **WASM Postgres (PGlite):** it can't be reached from the Python API without another bridge process.
+
+The cost is size: about 80 MB per installer.
+
+Secrets (the vault key and the database passwords) live in the OS keychain, not the data folder. The window loads the local web app at `http://localhost:PORT`, which counts as a secure context, so passkeys work there. The page gets no Tauri IPC.
+
 ### M4 — Pro charting
 - Lightweight Charts engine + overlay canvas.
 - Indicators package with cross-language tests.

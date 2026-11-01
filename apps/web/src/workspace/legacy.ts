@@ -49,7 +49,7 @@ export function clearLegacyData(): void {
 /** Read an uploaded `openchart-workspace.json`. Throws a readable message. */
 export async function readExportFile(file: File): Promise<Record<string, unknown>> {
   if (file.size > MAX_IMPORT_BYTES)
-    throw new UserError('That file is too large to be a prototype export.');
+    throw new UserError('That file is too large to be an OpenChart export.');
   let parsed: unknown;
   try {
     parsed = JSON.parse(await file.text());
@@ -57,7 +57,7 @@ export async function readExportFile(file: File): Promise<Record<string, unknown
     throw new UserError('That file is not valid JSON.');
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new UserError('That file is not a prototype export.');
+    throw new UserError('That file is not an OpenChart export.');
   }
   return parsed as Record<string, unknown>;
 }
