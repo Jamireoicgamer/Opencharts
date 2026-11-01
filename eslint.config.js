@@ -6,7 +6,15 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['legacy/', '**/dist/', '**/playwright-report/', '**/test-results/', '.venv/']),
+  globalIgnores([
+    'legacy/',
+    '**/dist/',
+    '**/playwright-report/',
+    '**/test-results/',
+    '.venv/',
+    'apps/desktop/build/',
+    'apps/desktop/target/',
+  ]),
   js.configs.recommended,
   tseslint.configs.strict,
   {
@@ -17,6 +25,10 @@ export default defineConfig(
   {
     files: ['*.js', '**/*.config.{js,ts}', '**/scripts/*.mjs'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['apps/desktop/ui/*.js'],
+    languageOptions: { globals: globals.browser },
   },
   {
     files: ['**/public/sw.js'],

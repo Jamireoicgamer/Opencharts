@@ -6,3 +6,8 @@ NOTICE
 
 # Provider responses, kept as recorded.
 apps/api/tests/fixtures/
+
+# Desktop build output.
+apps/desktop/build/
+apps/desktop/target/
+apps/desktop/src-tauri/gen/

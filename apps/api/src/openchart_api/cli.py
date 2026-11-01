@@ -2,6 +2,7 @@
 """Command-line entry point: ``openchart-api migrate`` and ``openchart-api serve``."""
 
 import argparse
+import os
 import sys
 import threading
 
@@ -47,7 +48,6 @@ def main(argv: list[str] | None = None) -> int:
 
 def _bootstrap() -> int:
     import asyncio
-    import os
 
     from openchart_api.bootstrap import bootstrap
 
@@ -87,7 +87,13 @@ def _serve(host: str, port: int, *, exit_with_stdin: bool) -> int:
 
         threading.Thread(target=watch, daemon=True).start()
     server.run()
-    return 0
+    code = 0 if server.started else 1
+    if exit_with_stdin:
+        # The stdin watcher may still be blocked reading; don't wait for it.
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
+    return code
 
 
 if __name__ == "__main__":
