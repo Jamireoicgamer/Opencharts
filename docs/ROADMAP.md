@@ -44,9 +44,12 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [ ] Twelve Data checked with a real key
 
 ## M3½ — Desktop app
-- [ ] Windows and macOS app (Tauri) that runs everything on one computer, with no server or Docker
-- [ ] Embedded database and API, signed builds, automatic updates
-- [ ] The same workspace export/import moves data between the desktop app and a server
+- [x] Windows and macOS app (Tauri) that runs everything on one computer, with no server or Docker ([guide](guides/desktop.md))
+- [x] Bundled PostgreSQL 16 and frozen API on 127.0.0.1, keys in the system keychain, crash recovery, smoke-tested on each platform in CI
+- [x] Signed automatic updates, ready to switch on with the project's update key
+- [x] The same workspace export/import moves data between the desktop app and a server
+- [ ] Code-signed and notarised builds (needs Apple and Windows certificates)
+- [ ] Hands-on install check on a fresh Windows and macOS machine
 
 ## M4 — Pro charting
 - [ ] Lightweight Charts engine with custom overlay canvas
