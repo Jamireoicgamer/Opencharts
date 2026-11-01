@@ -1,0 +1,52 @@
+[
+ {
+  "type": "subscriptions",
+  "channels": [
+   {
+    "name": "ticker",
+    "product_ids": [
+     "BTC-USD"
+    ],
+    "account_ids": null
+   }
+  ]
+ },
+ {
+  "type": "ticker",
+  "sequence": 138611870074,
+  "product_id": "BTC-USD",
+  "price": "77564.99",
+  "open_24h": "77241.32",
+  "volume_24h": "2188.49864745",
+  "low_24h": "76954.57",
+  "high_24h": "77645.12",
+  "volume_30d": "150426.21592548",
+  "best_bid": "77564.99",
+  "best_bid_size": "0.62229845",
+  "best_ask": "77565.00",
+  "best_ask_size": "0.09567096",
+  "side": "sell",
+  "time": "2026-11-01T01:23:45.082133Z",
+  "trade_id": 1113386528,
+  "last_size": "0.00000022"
+ },
+ {
+  "type": "ticker",
+  "sequence": 138611870236,
+  "product_id": "BTC-USD",
+  "price": "77564.99",
+  "open_24h": "77241.32",
+  "volume_24h": "2188.49864813",
+  "low_24h": "76954.57",
+  "high_24h": "77645.12",
+  "volume_30d": "150426.21592616",
+  "best_bid": "77564.99",
+  "best_bid_size": "0.62229777",
+  "best_ask": "77565.00",
+  "best_ask_size": "0.09567096",
+  "side": "sell",
+  "time": "2026-11-01T01:23:45.983524Z",
+  "trade_id": 1113386529,
+  "last_size": "0.00000068"
+ }
+]

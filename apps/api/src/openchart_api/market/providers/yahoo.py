@@ -88,6 +88,27 @@ def _market_state(meta: dict[str, Any], now: datetime) -> MarketState:
     return "open" if start <= now < end else "closed"
 
 
+def _num(value: Any) -> Any:
+    """Yahoo's prices are binary floats with float32 noise (213.66000366210938);
+    keep the 7 significant digits they actually carry."""
+    return format(value, ".7g") if isinstance(value, float) else value
+
+
+def _previous_close(result: dict[str, Any], at: datetime) -> Decimal | None:
+    """The close of the session before the one ``at`` falls in."""
+    stamps = result.get("timestamp")
+    indicators = result.get("indicators")
+    quotes = indicators.get("quote") if isinstance(indicators, dict) else None
+    closes = quotes[0].get("close") if isinstance(quotes, list) and quotes else None
+    if isinstance(stamps, list) and isinstance(closes, list) and len(stamps) == len(closes):
+        sessions = [(from_unix(t), c) for t, c in zip(stamps, closes, strict=True) if c is not None]
+        earlier = [c for t, c in sessions if t <= at]
+        if len(earlier) >= 2:
+            return optional_amount(_num(earlier[-2]))
+    meta = result["meta"]
+    return optional_amount(_num(meta.get("previousClose") or meta.get("chartPreviousClose")))
+
+
 class Yahoo:
     name: ClassVar[str] = "yahoo"
     label: ClassVar[str] = "Yahoo Finance"
@@ -122,17 +143,20 @@ class Yahoo:
         return _chart(payload)
 
     async def quote(self, instrument: InstrumentRef) -> Quote:
-        result = await self._fetch(instrument, {"range": "1d", "interval": "1d"})
+        # Five daily bars, so the previous session's close is known even on
+        # weekends and holidays (a one-day range has none then).
+        result = await self._fetch(instrument, {"range": "5d", "interval": "1d"})
         meta = result["meta"]
         scale = _scale(_currency(meta.get("currency")), instrument.currency)
-        previous = optional_amount(meta.get("previousClose") or meta.get("chartPreviousClose"))
+        at = from_unix(meta.get("regularMarketTime"))
+        previous = _previous_close(result, at)
         now = datetime.now(UTC)
         return Quote(
             instrument_id=instrument.id,
-            price=amount(meta.get("regularMarketPrice")) * scale,
+            price=amount(_num(meta.get("regularMarketPrice"))) * scale,
             previous_close=None if previous is None else previous * scale,
             currency=instrument.currency,
-            at=from_unix(meta.get("regularMarketTime")),
+            at=at,
             source=self.name,
             delay="delayed",
             delay_minutes=None,
@@ -176,7 +200,7 @@ class Yahoo:
                 # Daily bars are keyed by the exchange's calendar date.
                 local = t + timedelta(seconds=offset)
                 t = datetime(local.year, local.month, local.day, tzinfo=UTC)
-            bar = candle(t, o, h, low, c, v)
+            bar = candle(t, _num(o), _num(h), _num(low), _num(c), v)
             candles[t] = Candle(
                 t=t,
                 open=bar.open * scale,
