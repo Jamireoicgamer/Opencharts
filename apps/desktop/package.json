@@ -1,0 +1,20 @@
+{
+  "name": "@opencharts/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.3"
+  },
+  "optionalDependencies": {
+    "@embedded-postgres/darwin-arm64": "16.14.0-beta.17",
+    "@embedded-postgres/darwin-x64": "16.14.0-beta.17",
+    "@embedded-postgres/linux-x64": "16.14.0-beta.17",
+    "@embedded-postgres/windows-x64": "16.14.0-beta.17"
+  }
+}
