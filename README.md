@@ -2,7 +2,17 @@
 
 A minimal, near-black, chart-first, self-hosted investment terminal with AI research — in early development.
 
-> **Status:** the new app provides accounts and security (milestones M1a and M1b) and the research workspace (M2): a watchlist, a versioned thesis journal, research checklists and notes, holdings and price alerts, all saved on your server and synced between devices, with instrument search (Ctrl/⌘ K), JSON export, import from the prototype, and an installable app on phones and desktops. Sign-in covers invite-only accounts, two-factor with an authenticator app or passkeys, passwordless passkeys and optional Google sign-in. **Live market data, charts and AI arrive in later milestones**; nothing in the new app is simulated, so the chart area stays empty and alerts wait until a data source exists. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
+> **Status:** the new app provides:
+> - **accounts and security** (M1a, M1b): invite-only accounts, two-factor with an authenticator app or passkeys, passwordless passkeys and optional Google sign-in;
+> - **the research workspace** (M2): watchlist, versioned thesis journal, research notes, holdings and alerts, synced between devices;
+> - **live market data** (M3):
+>   - real-time crypto from Coinbase or Kraken;
+>   - delayed UK and US shares, ETFs, indices and FX from Yahoo Finance (opt-in) or your own Twelve Data key;
+>   - candlestick and line charts, with every price labelled with its source and delay;
+>   - live watchlist prices and holding values;
+>   - price alerts checked on the server, even while the app is closed.
+>
+> Coinbase, Kraken and Yahoo were verified live in November 2026; Twelve Data still needs testing with a real key (see the [market data guide](docs/guides/market-data.md)). **AI arrives in M5.** Nothing in the app is simulated. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
 
 The V4.1 interface prototype — simulated prices and scripted AI, browser storage only — is kept in `legacy/` as the design reference.
 

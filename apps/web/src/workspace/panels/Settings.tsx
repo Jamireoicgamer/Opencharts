@@ -7,6 +7,7 @@ import { useSubmit } from '../../hooks';
 import { useWorkspace } from '../context';
 import { clearLegacyData, findLegacyData, readExportFile } from '../legacy';
 import { Panel } from '../Panel';
+import { DataSources } from './DataSources';
 import type { ImportResult, Preferences } from '../types';
 
 type Toggle = 'show_grid' | 'show_ohlc' | 'compact';
@@ -93,6 +94,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           </label>
         ))}
       </div>
+
+      <h3 className="list-heading" id="data-sources">
+        Data sources
+      </h3>
+      <DataSources />
 
       <h3 className="list-heading">Your data</h3>
       <p className="helper">

@@ -1018,6 +1018,7 @@ dependencies = [
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
     { name = "webauthn" },
+    { name = "websockets" },
 ]
 
 [package.metadata]
@@ -1035,6 +1036,7 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.30" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
     { name = "webauthn", specifier = ">=2.5" },
+    { name = "websockets", specifier = ">=15" },
 ]
 
 [[package]]

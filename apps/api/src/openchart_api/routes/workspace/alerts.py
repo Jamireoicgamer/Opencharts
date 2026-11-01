@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import Row, Select, delete, func, insert, select, update
 
@@ -74,29 +74,44 @@ async def list_alerts(user: User, conn: Conn) -> list[Alert]:
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def add_alert(body: AlertInput, user: User, conn: Conn) -> Alert:
+async def add_alert(body: AlertInput, user: User, request: Request, conn: Conn) -> Alert:
     await require_instrument(conn, body.instrument_id)
     if (await conn.scalar(select(func.count()).select_from(alerts)) or 0) >= MAX_ALERTS:
         raise HTTPException(status.HTTP_409_CONFLICT, "Too many alerts")
     new_id = await conn.scalar(
         insert(alerts).values(user_id=user.id, **body.model_dump()).returning(alerts.c.id)
     )
+    _alerts_changed(request)
     return _alert((await conn.execute(_query().where(alerts.c.id == new_id))).one())
 
 
 @router.patch("/{alert_id}")
-async def change_alert(alert_id: UUID, body: AlertChange, user: User, conn: Conn) -> Alert:
-    values = body.model_dump(exclude_none=True)
+async def change_alert(
+    alert_id: UUID, body: AlertChange, user: User, request: Request, conn: Conn
+) -> Alert:
+    values: dict[str, Any] = body.model_dump(exclude_none=True)
+    if values.get("active"):
+        # Re-arming a triggered alert: it can fire again.
+        values["triggered_at"] = None
     if values:
         await conn.execute(update(alerts).where(alerts.c.id == alert_id).values(**values))
     row = (await conn.execute(_query().where(alerts.c.id == alert_id))).one_or_none()
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alert not found")
+    if "active" in values:
+        _alerts_changed(request)
     return _alert(row)
 
 
 @router.delete("/{alert_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_alert(alert_id: UUID, user: User, conn: Conn) -> None:
+async def delete_alert(alert_id: UUID, user: User, request: Request, conn: Conn) -> None:
     result = await conn.execute(delete(alerts).where(alerts.c.id == alert_id))
     if result.rowcount == 0:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alert not found")
+    _alerts_changed(request)
+
+
+def _alerts_changed(request: Request) -> None:
+    """Tell the market-data hub which instruments it must watch for alerts."""
+    if hub := getattr(request.app.state, "hub", None):
+        hub.alerts_changed()

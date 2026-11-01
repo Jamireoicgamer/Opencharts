@@ -8,10 +8,15 @@ const apiProxy = {
   '/api': { target: process.env.OPENCHART_API_URL ?? 'http://127.0.0.1:8000', changeOrigin: false },
 };
 
+// The production Content-Security-Policy (deploy/nginx.conf), so browser
+// tests against `vite preview` catch anything that breaks it.
+const PRODUCTION_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+
 export default defineConfig({
   plugins: [react()],
   server: { proxy: apiProxy },
-  preview: { proxy: apiProxy },
+  preview: { proxy: apiProxy, headers: { 'Content-Security-Policy': PRODUCTION_CSP } },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],

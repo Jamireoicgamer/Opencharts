@@ -59,7 +59,7 @@ describe('two-step sign-in', () => {
     await user.type(screen.getByLabelText('Code'), '123456');
     await user.click(screen.getByRole('button', { name: 'Verify' }));
     expect(
-      await screen.findByRole('heading', { name: 'No data source connected' }),
+      await screen.findByRole('heading', { name: 'Choose an instrument', level: 2 }),
     ).toBeInTheDocument();
     expect(api.calls.filter((c) => c.path === '/auth/mfa/totp')).toHaveLength(2);
   });
@@ -79,7 +79,7 @@ describe('two-step sign-in', () => {
     await user.type(screen.getByLabelText('Recovery code'), 'abcde-fghjk');
     await user.click(screen.getByRole('button', { name: 'Verify' }));
     expect(
-      await screen.findByRole('heading', { name: 'No data source connected' }),
+      await screen.findByRole('heading', { name: 'Choose an instrument', level: 2 }),
     ).toBeInTheDocument();
   });
 

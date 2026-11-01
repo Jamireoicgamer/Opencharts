@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
+import { ReauthProvider } from '../components/Reauth';
 import { afterEach, describe, expect, it } from 'vitest';
 import { amount, money } from '../format';
 import { defaultPreferences, mockApi } from '../test-api';
@@ -52,10 +53,12 @@ function onBae(extra: Parameters<typeof mockApi>[0] = {}) {
   });
 }
 
-function renderWorkspace(path = '/') {
+function renderWorkspace(path = '/', role: 'owner' | 'member' = 'owner') {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <Workspace />
+      <ReauthProvider>
+        <Workspace role={role} />
+      </ReauthProvider>
     </MemoryRouter>,
   );
 }
@@ -69,8 +72,10 @@ describe('stage and search', () => {
     mockApi({});
     renderWorkspace();
     expect(await screen.findByRole('button', { name: /Choose an instrument/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'No data source connected' })).toBeInTheDocument();
-    expect(screen.getByText(/NO MARKET DATA CONNECTED/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Choose an instrument', level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/CONNECTING TO LIVE PRICES/)).toBeInTheDocument();
   });
 
   it('finds an instrument with Ctrl+K and remembers the choice', async () => {
@@ -423,7 +428,9 @@ describe('formatting', () => {
     expect(amount('1234567.5000000000')).toBe('1,234,567.5');
     expect(amount('0.0000000100')).toBe('0.00000001');
     expect(money('1985.5000000000', 'GBX')).toBe('1,985.5p');
-    expect(money('70000.0000000000', 'USD')).toBe('$70,000');
+    expect(money('70000.0000000000', 'USD')).toBe('$70,000.00');
+    expect(money('77519.4', 'USD')).toBe('$77,519.40');
+    expect(money('0.0757146', 'USD')).toBe('$0.0757146');
     expect(money('5.0000000000', 'JPY')).toBe('5 JPY');
   });
 

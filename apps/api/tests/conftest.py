@@ -138,6 +138,14 @@ async def db(database: Database, admin_engine: AsyncEngine) -> Database:
         # CASCADE empties every table that references users.
         await conn.execute(text("TRUNCATE users, audit_log CASCADE"))
         await conn.execute(text("UPDATE server_settings SET require_mfa = false"))
+        await conn.execute(text("TRUNCATE candles, candle_ranges, data_sources"))
+        await conn.execute(
+            text(
+                "INSERT INTO data_sources (provider, enabled, priority) VALUES "
+                "('coinbase', true, 10), ('kraken', true, 20), "
+                "('yahoo', false, 30), ('twelvedata', false, 40)"
+            )
+        )
     return database
 
 
@@ -148,6 +156,8 @@ def settings(db: Database) -> Settings:
         migrate_database_url=db.owner_url,
         master_key=base64.b64encode(os.urandom(32)).decode(),
         setup_token=SETUP_TOKEN,
+        # Tests never reach real providers; market tests install fakes.
+        market_data=False,
     )
 
 

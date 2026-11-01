@@ -27,5 +27,10 @@ export function money(value: string, currency: string): string {
   const text = amount(value);
   if (currency === 'GBX') return `${text}p`;
   const symbol = SYMBOLS[currency];
-  return symbol ? `${symbol}${text}` : `${text} ${currency}`;
+  if (!symbol) return `${text} ${currency}`;
+  // Pounds, dollars and euros always show pence or cents: $77,519.40, not $77,519.4.
+  const decimals = text.split('.')[1]?.length ?? 0;
+  const padded =
+    decimals >= 2 ? text : `${text}${decimals === 0 ? '.' : ''}${'0'.repeat(2 - decimals)}`;
+  return `${symbol}${padded}`;
 }

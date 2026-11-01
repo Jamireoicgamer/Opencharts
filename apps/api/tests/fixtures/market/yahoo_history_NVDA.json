@@ -1,0 +1,94 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "USD",
+     "symbol": "NVDA",
+     "exchangeName": "NMS",
+     "fullExchangeName": "NasdaqGS",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 917015400,
+     "regularMarketTime": 1793390401,
+     "hasPrePostMarketData": true,
+     "gmtoffset": -14400,
+     "timezone": "EDT",
+     "exchangeTimezoneName": "America/New_York",
+     "regularMarketPrice": 204.64,
+     "regularMarketChangePercent": -4.222,
+     "fulldayPrice": 204.64,
+     "fulldayChange": -8.41,
+     "fulldayChangePercent": -3.936,
+     "fiftyTwoWeekHigh": 243.37,
+     "fiftyTwoWeekLow": 164.27,
+     "regularMarketDayHigh": 209.05,
+     "regularMarketDayLow": 200.92,
+     "regularMarketVolume": 165923799,
+     "longName": "NVIDIA Corporation",
+     "shortName": "NVIDIA Corporation",
+     "chartPreviousClose": 227.21,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "EDT",
+       "start": 1793347200,
+       "end": 1793367000,
+       "gmtoffset": -14400
+      },
+      "regular": {
+       "timezone": "EDT",
+       "start": 1793367000,
+       "end": 1793390400,
+       "gmtoffset": -14400
+      },
+      "post": {
+       "timezone": "EDT",
+       "start": 1793390400,
+       "end": 1793404800,
+       "gmtoffset": -14400
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "1mo"
+    },
+    "timestamp": [
+     1793194200,
+     1793280600,
+     1793367000
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "close": [
+        215.3800048828125,
+        213.66000366210938,
+        204.63999938964844
+       ],
+       "open": [
+        219.9199981689453,
+        214.36000061035156,
+        208.94000244140625
+       ],
+       "low": [
+        214.47000122070312,
+        212.0800018310547,
+        200.9199981689453
+       ],
+       "volume": [
+        93030200,
+        77568100,
+        168039400
+       ],
+       "high": [
+        219.99000549316406,
+        215.3300018310547,
+        209.05999755859375
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}

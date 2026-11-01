@@ -81,7 +81,9 @@ test.describe('installed app', () => {
     await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
     // Load once under the service worker so the shell and assets are cached.
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'No data source connected' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Choose an instrument', level: 2 }),
+    ).toBeVisible();
 
     const cached = await page.evaluate(async () => {
       const urls: string[] = [];

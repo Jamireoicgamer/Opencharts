@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     # whole API surface and load scripts from a CDN that the CSP blocks.
     api_docs: bool = False
     session_ttl_days: int = 30
+    # Run the market-data hub: live prices, history fetching and alert checks.
+    market_data: bool = True
     invite_ttl_hours: int = 72
     # Google sign-in (optional). Needs public_origin: Google redirects back to
     # {public_origin}/api/auth/google/callback. See docs/guides/google-sign-in.md.

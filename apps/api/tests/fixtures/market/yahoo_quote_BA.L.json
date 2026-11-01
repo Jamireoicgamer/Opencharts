@@ -1,0 +1,94 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "GBp",
+     "symbol": "BA.L",
+     "exchangeName": "LSE",
+     "fullExchangeName": "LSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 583743600,
+     "regularMarketTime": 1793378147,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 0,
+     "timezone": "GMT",
+     "exchangeTimezoneName": "Europe/London",
+     "regularMarketPrice": 2070.0,
+     "regularMarketChangePercent": 0.0,
+     "fulldayPrice": 2070.0,
+     "fulldayChange": 0.0,
+     "fulldayChangePercent": 0.0,
+     "fiftyTwoWeekHigh": 2360.0,
+     "fiftyTwoWeekLow": 1529.0,
+     "regularMarketDayHigh": 2094.0,
+     "regularMarketDayLow": 2049.0,
+     "regularMarketVolume": 5947694,
+     "longName": "BAE Systems plc",
+     "shortName": "BAE SYSTEMS PLC ORD 2.5P",
+     "chartPreviousClose": 1932.0,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "GMT",
+       "end": 1793347200,
+       "start": 1793344500,
+       "gmtoffset": 0
+      },
+      "regular": {
+       "timezone": "GMT",
+       "end": 1793377800,
+       "start": 1793347200,
+       "gmtoffset": 0
+      },
+      "post": {
+       "timezone": "GMT",
+       "end": 1793380500,
+       "start": 1793377800,
+       "gmtoffset": 0
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "5d"
+    },
+    "timestamp": [
+     1793174400,
+     1793260800,
+     1793347200
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "volume": [
+        3594431,
+        3190761,
+        5948522
+       ],
+       "high": [
+        2046.0,
+        2099.0,
+        2094.0
+       ],
+       "low": [
+        2009.0,
+        2034.0,
+        2049.0
+       ],
+       "close": [
+        2025.0,
+        2070.0,
+        2070.0
+       ],
+       "open": [
+        2026.0,
+        2036.0,
+        2090.0
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}
