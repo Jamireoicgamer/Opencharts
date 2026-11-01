@@ -50,6 +50,7 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] The same workspace export/import moves data between the desktop app and a server
 - [ ] Code-signed and notarised builds (needs Apple and Windows certificates)
 - [ ] Hands-on install check on a fresh Windows and macOS machine
+- [ ] Intel Mac build (the bundled OpenSSL is older than the cryptography library needs)
 
 ## M4 — Pro charting
 - [ ] Lightweight Charts engine with custom overlay canvas

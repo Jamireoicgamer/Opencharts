@@ -47,6 +47,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Intel Macs are left out for now: the frozen API's cryptography
+          # library needs a newer OpenSSL than the one PyInstaller bundles
+          # there (missing SSL_get0_group_name). See docs/ROADMAP.md.
           - name: Windows (x64)
             os: windows-latest
             platform: windows-x86_64
@@ -54,10 +57,6 @@ jobs:
           - name: macOS (Apple silicon)
             os: macos-latest
             platform: darwin-aarch64
-            exe: ''
-          - name: macOS (Intel)
-            os: macos-15-intel
-            platform: darwin-x86_64
             exe: ''
     defaults:
       run:
