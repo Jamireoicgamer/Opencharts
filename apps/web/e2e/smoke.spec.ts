@@ -1,27 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { expect, test, type Page, type Route } from '@playwright/test';
-
-type Fulfill = Parameters<Route['fulfill']>[0];
-
-const owner = { id: 'u1', email: 'owner@example.com', display_name: 'Ada', role: 'owner' };
-
-async function fakeApi(page: Page, routes: Record<string, unknown>) {
-  await page.route('**/api/**', async (route) => {
-    const url = new URL(route.request().url());
-    const key = `${route.request().method()} ${url.pathname.replace('/api', '')}`;
-    const value = routes[key];
-    if (typeof value === 'function') return route.fulfill((value as () => Fulfill)());
-    if (value === undefined) return route.fulfill({ status: 404, json: { detail: 'Not found' } });
-    return route.fulfill({ json: value });
-  });
-}
+import { expect, test } from '@playwright/test';
+import { fakeApi, owner, workspaceRoutes } from './fake-api';
 
 test('signed-in user sees the app shell and API health', async ({ page }) => {
-  await fakeApi(page, {
-    'GET /health': { status: 'ok', version: '0.1.0' },
-    'GET /setup/status': { needs_setup: false },
-    'GET /auth/me': owner,
-  });
+  await fakeApi(page, workspaceRoutes());
   await page.goto('/');
   await expect(page).toHaveTitle('OpenChart AI');
   await expect(page.getByRole('heading', { name: 'No data source connected' })).toBeVisible();
@@ -32,7 +14,7 @@ test('signed-in user sees the app shell and API health', async ({ page }) => {
 test('first run: setup, then manage devices from the account page', async ({ page }) => {
   let setupDone = false;
   await fakeApi(page, {
-    'GET /health': { status: 'ok', version: '0.1.0' },
+    ...workspaceRoutes(),
     'GET /setup/status': () => ({ json: { needs_setup: !setupDone } }),
     'GET /auth/me': () =>
       setupDone ? { json: owner } : { status: 401, json: { detail: 'Not signed in' } },

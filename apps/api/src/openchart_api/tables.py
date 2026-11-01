@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     MetaData,
+    Numeric,
     Table,
     Text,
     Uuid,
@@ -168,4 +169,101 @@ auth_flows = Table(
     Column("attempts", Integer, nullable=False),
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
+# Workspace (milestone M2) ----------------------------------------------------------
+
+instruments = Table(
+    "instruments",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("symbol", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("exchange", Text, nullable=False),
+    Column("currency", Text, nullable=False),
+    Column("asset_class", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+watchlist_items = Table(
+    "watchlist_items",
+    metadata,
+    Column("user_id", Uuid, primary_key=True),
+    Column("instrument_id", Text, primary_key=True),
+    Column("position", Integer, nullable=False),
+    Column("added_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+thesis_versions = Table(
+    "thesis_versions",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("instrument_id", Text, nullable=False),
+    Column("summary", Text, nullable=False),
+    Column("key_risk", Text, nullable=False),
+    Column("bull_case", Text, nullable=False),
+    Column("bear_case", Text, nullable=False),
+    Column("fair_value", Numeric(28, 10)),
+    Column("entry_price", Numeric(28, 10)),
+    Column("conviction", Text, nullable=False),
+    Column("horizon", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+research_notes = Table(
+    "research_notes",
+    metadata,
+    Column("user_id", Uuid, primary_key=True),
+    Column("instrument_id", Text, primary_key=True),
+    Column("body", Text, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+research_tasks = Table(
+    "research_tasks",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("instrument_id", Text, nullable=False),
+    Column("label", Text, nullable=False),
+    Column("done", Boolean, nullable=False, server_default=FetchedValue()),
+    Column("position", Integer, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+positions = Table(
+    "positions",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("instrument_id", Text, nullable=False),
+    Column("quantity", Numeric(28, 10), nullable=False),
+    Column("average_price", Numeric(28, 10)),
+    Column("account", Text, nullable=False, server_default=FetchedValue()),
+    Column("note", Text, nullable=False, server_default=FetchedValue()),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+alerts = Table(
+    "alerts",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("instrument_id", Text, nullable=False),
+    Column("direction", Text, nullable=False),
+    Column("price", Numeric(28, 10), nullable=False),
+    Column("note", Text, nullable=False, server_default=FetchedValue()),
+    Column("active", Boolean, nullable=False, server_default=FetchedValue()),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+    Column("triggered_at", DateTime(timezone=True)),
+)
+
+user_preferences = Table(
+    "user_preferences",
+    metadata,
+    Column("user_id", Uuid, primary_key=True),
+    Column("data", JSONB, nullable=False, server_default=FetchedValue()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
 )
