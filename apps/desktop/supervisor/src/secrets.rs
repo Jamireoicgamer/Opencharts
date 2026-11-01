@@ -119,3 +119,69 @@ impl SecretStore for SecretFile {
         Ok(crate::write_private(&self.0, &serialize(secrets)?)?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample() -> Secrets {
+        Secrets::generate().unwrap()
+    }
+
+    #[test]
+    fn generated_secrets_are_strong_and_distinct() {
+        let a = sample();
+        let b = sample();
+        assert_eq!(
+            base64::engine::general_purpose::STANDARD
+                .decode(&a.master_key)
+                .unwrap()
+                .len(),
+            32
+        );
+        for password in [&a.admin_password, &a.owner_password, &a.app_password] {
+            assert_eq!(password.len(), 64);
+            assert!(password.bytes().all(|c| c.is_ascii_hexdigit()));
+        }
+        assert_ne!(a.app_password, a.owner_password);
+        assert_ne!(a.master_key, b.master_key);
+    }
+
+    #[test]
+    fn secret_file_round_trip_is_private() {
+        let dir = std::env::temp_dir().join(format!("oc-secrets-{}", random_hex(8).unwrap()));
+        let store = SecretFile(dir.join("secrets.json"));
+        assert!(store.load().unwrap().is_none());
+        let secrets = sample();
+        store.save(&secrets).unwrap();
+        assert_eq!(
+            store.load().unwrap().unwrap().master_key,
+            secrets.master_key
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&store.0).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// Uses the real system keychain, so CI runs it on Windows and macOS
+    /// explicitly: `cargo test -- --ignored keychain`.
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    #[test]
+    #[ignore]
+    fn keychain_round_trip() {
+        let service = format!("ai.openchart.desktop.test-{}", random_hex(4).unwrap());
+        let keychain = Keychain::new(&service).unwrap();
+        assert!(keychain.load().unwrap().is_none());
+        let secrets = sample();
+        keychain.save(&secrets).unwrap();
+        assert_eq!(
+            keychain.load().unwrap().unwrap().app_password,
+            secrets.app_password
+        );
+        keychain.entry.delete_credential().unwrap();
+    }
+}

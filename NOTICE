@@ -28,3 +28,23 @@ TradingView Lightweight Charts(TM) 5.2.1
 fancy-canvas 2.1.0 (a dependency of Lightweight Charts)
   Copyright (c) TradingView, Inc.
   Licensed under the MIT License.
+
+The desktop app (apps/desktop) also bundles:
+
+PostgreSQL 16
+  Copyright (c) 1996-2026, The PostgreSQL Global Development Group
+  Copyright (c) 1994, The Regents of the University of California
+  Licensed under the PostgreSQL License (apps/desktop/licenses/PostgreSQL.txt,
+  shipped next to the binaries). Builds from the @embedded-postgres npm
+  packages (MIT, Copyright (c) 2022 Lei Nelissen), which repackage
+  zonky.io's embedded PostgreSQL binaries (Apache-2.0).
+
+Python 3.13 and the API's Python dependencies, frozen with PyInstaller
+  Python is licensed under the PSF License Agreement. PyInstaller's
+  bootloader is GPL-2.0 with an exception that allows bundling it with
+  programs under any licence. Each Python dependency keeps its own licence.
+
+Tauri 2 and its plugins
+  Copyright (c) The Tauri Programme within The Commons Conservancy.
+  Licensed under MIT or Apache-2.0.
+
