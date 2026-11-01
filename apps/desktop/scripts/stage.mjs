@@ -16,6 +16,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDevelopmentLink } from './links.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const desktop = resolve(here, '..');
@@ -47,8 +48,7 @@ cpSync(join(pkg, 'native'), postgres, { recursive: true, dereference: true });
 const links = join(postgres, 'pg-symlinks.json');
 if (existsSync(links)) {
   for (const { source, target } of JSON.parse(readFileSync(links, 'utf8'))) {
-    // Unversioned names (libpq.so, libpq.dylib) are only for compiling against.
-    if (/\.(so|dylib)$/.test(target)) continue;
+    if (isDevelopmentLink(target)) continue;
     const from = join(postgres, source.replace(/^native\//, ''));
     const to = join(postgres, target.replace(/^native\//, ''));
     if (!existsSync(to)) cpSync(from, to);
@@ -76,7 +76,7 @@ cpSync(join(desktop, 'licenses', 'PostgreSQL.txt'), join(postgres, 'LICENSE-Post
 
 // The frozen API.
 const api = join(build, 'api', `openchart-api${exe}`);
-if (!existsSync(api)) {
+if (!existsSync(api) || !statSync(api).isFile()) {
   fail('no frozen API; run: uv sync --group desktop && uv run python apps/api/scripts/freeze.py');
 }
 
