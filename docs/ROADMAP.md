@@ -36,10 +36,12 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [x] Installable PWA with an offline app shell (the API is never cached)
 
 ## M3 — Live market data
-- [ ] Provider interface, canonical instrument IDs, GBX/GBP handling
-- [ ] Crypto WebSockets, opt-in delayed equities, first bring-your-own-key adapter
-- [ ] TimescaleDB candles, Redis fan-out, client WebSocket with polling fallback
-- [ ] Source, timestamp and delay labels on every quote
+- [x] Provider interface, canonical instrument IDs, GBX/GBP handling
+- [x] Crypto WebSockets (Coinbase, Kraken fallback), opt-in delayed equities (Yahoo Finance), first bring-your-own-key adapter (Twelve Data)
+- [x] Candle cache in Postgres, in-process hub, client WebSocket with polling fallback ([decision](PLAN.md#decision-2026-11-one-process-for-market-data); Timescale and Redis when scaling needs them)
+- [x] Source, timestamp and delay labels on every quote; candlestick/line charts; live watchlist and holding values; server-side price alerts
+- [x] Checked against the live providers (1 November 2026): Coinbase streaming, Kraken failover, Yahoo delayed UK/US quotes, history served from the cache, an alert firing on a live price
+- [ ] Twelve Data checked with a real key
 
 ## M3½ — Desktop app
 - [ ] Windows and macOS app (Tauri) that runs everything on one computer, with no server or Docker

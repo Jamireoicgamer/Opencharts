@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { ErrorMessage, formValues } from '../../components/Form';
 import { money, when } from '../../format';
 import { useLoad, useSubmit } from '../../hooks';
+import { useFiredAlerts } from '../../market/hooks';
 import { useWorkspace } from '../context';
 import { Icon } from '../Icon';
 import { Panel } from '../Panel';
@@ -13,7 +14,9 @@ import { MoneyField } from './Thesis';
 export function AlertsPanel({ onClose }: { onClose: () => void }) {
   const { instrument } = useWorkspace();
   const load = useCallback(() => api<Alert[]>('GET', '/alerts'), []);
-  const { data: alerts, error, setData: setAlerts } = useLoad(load);
+  const { data: alerts, error, setData: setAlerts, reload } = useLoad(load);
+  // Show "Triggered" as soon as the server fires one.
+  useFiredAlerts(reload);
 
   const add = useSubmit(async (form: HTMLFormElement, values: Record<string, string>) => {
     if (!instrument) return;
@@ -43,7 +46,8 @@ export function AlertsPanel({ onClose }: { onClose: () => void }) {
       onClose={onClose}
     >
       <p className="helper">
-        Alerts are saved now and checked once a live data source is connected (milestone M3).
+        Alerts are checked against live prices on the server, even while this app is closed. Each
+        alert fires once; resume it to arm it again.
       </p>
       {instrument ? (
         <form
@@ -90,7 +94,11 @@ export function AlertsPanel({ onClose }: { onClose: () => void }) {
               <div>
                 <strong>{a.instrument.symbol}</strong> {a.direction}{' '}
                 {money(a.price, a.instrument.currency)}
-                {!a.active && <span className="pill">Paused</span>}
+                {!a.active && (
+                  <span className="pill" data-triggered={a.triggered_at ? true : undefined}>
+                    {a.triggered_at ? 'Triggered' : 'Paused'}
+                  </span>
+                )}
                 <small>
                   {a.triggered_at
                     ? `Triggered ${when(a.triggered_at)}`
@@ -105,7 +113,7 @@ export function AlertsPanel({ onClose }: { onClose: () => void }) {
                   disabled={change.busy}
                   onClick={() => void change.run(a)}
                 >
-                  {a.active ? 'Pause' : 'Resume'}
+                  {a.active ? 'Pause' : a.triggered_at ? 'Re-arm' : 'Resume'}
                 </button>
                 <button
                   type="button"

@@ -267,3 +267,44 @@ user_preferences = Table(
     Column("data", JSONB, nullable=False, server_default=FetchedValue()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
 )
+
+candles = Table(
+    "candles",
+    metadata,
+    Column("instrument_id", Text, primary_key=True),
+    Column("interval", Text, primary_key=True),
+    Column("t", DateTime(timezone=True), primary_key=True),
+    Column("open", Numeric(28, 10), nullable=False),
+    Column("high", Numeric(28, 10), nullable=False),
+    Column("low", Numeric(28, 10), nullable=False),
+    Column("close", Numeric(28, 10), nullable=False),
+    Column("volume", Numeric(38, 10)),
+    Column("source", Text, nullable=False),
+    Column("fetched_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
+candle_ranges = Table(
+    "candle_ranges",
+    metadata,
+    Column("instrument_id", Text, primary_key=True),
+    Column("interval", Text, primary_key=True),
+    Column("covered_from", DateTime(timezone=True), nullable=False),
+    Column("covered_to", DateTime(timezone=True), nullable=False),
+)
+
+data_sources = Table(
+    "data_sources",
+    metadata,
+    Column("provider", Text, primary_key=True),
+    Column("enabled", Boolean, nullable=False, server_default=FetchedValue()),
+    Column("priority", Integer, nullable=False),
+    Column("tos_accepted_at", DateTime(timezone=True)),
+    Column("tos_accepted_by", Uuid),
+    Column("key_ciphertext", LargeBinary),
+    Column("key_nonce", LargeBinary),
+    Column("key_wrapped_dek", LargeBinary),
+    Column("key_dek_nonce", LargeBinary),
+    Column("key_version", Integer),
+    Column("key_hint", Text, nullable=False, server_default=FetchedValue()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)

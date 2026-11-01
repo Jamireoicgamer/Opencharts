@@ -47,7 +47,7 @@ describe('routing and sign-in', () => {
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
     await user.click(screen.getByRole('button', { name: 'Create owner account' }));
     expect(
-      await screen.findByRole('heading', { name: 'No data source connected' }),
+      await screen.findByRole('heading', { name: 'Choose an instrument', level: 2 }),
     ).toBeInTheDocument();
     expect(api.calls.find((c) => c.path === '/setup')?.body).toEqual({
       setup_token: 'tok',
@@ -197,7 +197,7 @@ describe('security audit fixes', () => {
     await user.type(screen.getByLabelText('Email'), 'bob@example.com');
     await user.type(screen.getByLabelText('Password'), 'another long password');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    await screen.findByRole('heading', { name: 'No data source connected' });
+    await screen.findByRole('heading', { name: 'Choose an instrument', level: 2 });
     expect(api.calls.find((c) => c.path === '/auth/register')?.body).toMatchObject({
       invite_token: 'tok-123',
     });

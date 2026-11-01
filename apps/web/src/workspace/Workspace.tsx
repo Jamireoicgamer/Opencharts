@@ -2,11 +2,17 @@
 // The main screen: an icon rail, the instrument on stage, and one panel at a
 // time. The open panel is in the URL (?panel=thesis), so links and the back
 // button work.
-import { useEffect, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useState, type ComponentType } from 'react';
 import { useSearchParams } from 'react-router';
+import type { Role } from '../api';
 import './workspace.css';
 import { ErrorMessage } from '../components/Form';
+import { money } from '../format';
 import { useSubmit } from '../hooks';
+import { ChartArea } from '../market/ChartArea';
+import { MarketProvider, useConnection, useFiredAlerts, useQuotes } from '../market/hooks';
+import { QuoteHeader } from '../market/QuoteHeader';
+import type { FiredAlert } from '../market/types';
 import { useWorkspace, WorkspaceProvider } from './context';
 import { Icon, type IconName } from './Icon';
 import { Palette } from './Palette';
@@ -37,15 +43,17 @@ const PANELS = {
 type PanelName = keyof typeof PANELS;
 const isPanel = (value: string | null): value is PanelName => value !== null && value in PANELS;
 
-export function Workspace() {
+export function Workspace({ role }: { role: Role }) {
   return (
     <WorkspaceProvider>
-      <WorkspaceLayout />
+      <MarketProvider>
+        <WorkspaceLayout canConfigure={role === 'owner' || role === 'admin'} />
+      </MarketProvider>
     </WorkspaceProvider>
   );
 }
 
-function WorkspaceLayout() {
+function WorkspaceLayout({ canConfigure }: { canConfigure: boolean }) {
   const { prefs, problem } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const [searching, setSearching] = useState(false);
@@ -96,7 +104,7 @@ function WorkspaceLayout() {
         ))}
       </nav>
 
-      <Stage onSearch={() => setSearching(true)} />
+      <Stage onSearch={() => setSearching(true)} canConfigure={canConfigure} />
 
       {Current && <Current onClose={() => openPanel(null)} onSearch={() => setSearching(true)} />}
       {searching && <Palette onClose={() => setSearching(false)} />}
@@ -105,14 +113,59 @@ function WorkspaceLayout() {
           {problem}
         </p>
       )}
+      <AlertToasts />
     </div>
   );
 }
 
-function Stage({ onSearch }: { onSearch: () => void }) {
+/** "BTC-USD rose above $70,000 · now $70,512" */
+export function describeAlert(a: FiredAlert): string {
+  const symbol = a.instrument_id.split(':')[1] ?? a.instrument_id;
+  const verb = a.direction === 'above' ? 'rose above' : 'fell below';
+  return `${symbol} ${verb} ${money(a.level, a.currency)} · now ${money(a.price, a.currency)}`;
+}
+
+function AlertToasts() {
+  const [fired, setFired] = useState<FiredAlert[]>([]);
+  useFiredAlerts(useCallback((alert: FiredAlert) => setFired((list) => [...list, alert]), []));
+  if (fired.length === 0) return null;
+  return (
+    <div className="alert-toasts" role="alert">
+      {fired.map((a) => (
+        <div key={a.alert_id} className="alert-toast">
+          <Icon name="bell" />
+          <span>
+            <strong>Price alert</strong> {describeAlert(a)}
+            {a.note && <small>{a.note}</small>}
+          </span>
+          <button
+            type="button"
+            className="icon-button small"
+            aria-label="Dismiss alert"
+            onClick={() => setFired((list) => list.filter((x) => x.alert_id !== a.alert_id))}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const CONNECTION_LABELS = {
+  connecting: 'CONNECTING TO LIVE PRICES',
+  live: 'LIVE PRICES',
+  polling: 'LIVE CONNECTION UNAVAILABLE · UPDATING EVERY 15 S',
+  offline: 'PRICES OFFLINE',
+} as const;
+
+function Stage({ onSearch, canConfigure }: { onSearch: () => void; canConfigure: boolean }) {
   const { instrument, prefs, updatePrefs, watchlist, addToWatchlist, removeFromWatchlist } =
     useWorkspace();
   const watching = instrument !== null && watchlist.some((w) => w.id === instrument.id);
+  const live = useQuotes(instrument ? [instrument.id] : []);
+  const connection = useConnection();
+  const current = instrument ? live[instrument.id] : undefined;
   const star = useSubmit(async () => {
     if (!instrument) return;
     await (watching ? removeFromWatchlist(instrument.id) : addToWatchlist(instrument.id));
@@ -152,6 +205,7 @@ function Stage({ onSearch }: { onSearch: () => void }) {
         )}
         {instrument && (
           <div className="asset-actions">
+            <QuoteHeader live={current} currency={instrument.currency} />
             <button
               type="button"
               className="icon-button"
@@ -194,20 +248,29 @@ function Stage({ onSearch }: { onSearch: () => void }) {
         </button>
       </section>
 
-      <div className="chart-shell" data-grid={prefs.show_grid || undefined}>
-        <div className="empty-chart">
-          <Icon name="chart" />
-          <h2>No data source connected</h2>
-          <p>
-            Live prices and charts arrive with milestone M3. Nothing on this screen is simulated, so
-            there is nothing to draw yet. Your watchlist, theses, research, holdings and alerts
-            already work and are saved on your server.
-          </p>
-        </div>
+      <div className="chart-shell">
+        {instrument ? (
+          <ChartArea
+            key={instrument.id}
+            instrumentId={instrument.id}
+            live={current}
+            period={prefs.period}
+            chartType={prefs.chart_type}
+            showGrid={prefs.show_grid}
+            showOhlc={prefs.show_ohlc}
+            canConfigure={canConfigure}
+          />
+        ) : (
+          <div className="chart-message">
+            <Icon name="chart" />
+            <h2>Choose an instrument</h2>
+            <p>Search with Ctrl/⌘ K, or open your watchlist.</p>
+          </div>
+        )}
       </div>
       <footer className="stage-footer">
-        <span className="footer-status">
-          <span className="dot" aria-hidden="true" /> NO MARKET DATA CONNECTED
+        <span className="footer-status" data-connection={connection}>
+          <span className="dot" aria-hidden="true" /> {CONNECTION_LABELS[connection]}
         </span>
         <span className="footer-hint">Ctrl/⌘ K to search</span>
       </footer>

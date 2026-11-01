@@ -332,6 +332,12 @@ Each milestone is roughly 3–8 small PRs. A PR should be reviewable in one sitt
 - Source / timestamp / delay labels in the UI.
 - **Done when:** BTC streams live, NVDA and BAE show correctly labelled delayed quotes, and history loads from cache.
 
+#### Decision (2026-11): one process for market data
+
+M3 runs the market-data hub inside the API process. It uses asyncio tasks and an in-memory fan-out, with candles cached in a plain Postgres table. There is no separate worker, Redis or TimescaleDB yet. A single self-hosted server, and the desktop app that follows, don't need them, and each would be one more thing to run.
+
+The provider adapters, hub and cache are separate modules, so Redis fan-out and Timescale storage can be added behind the same interfaces when one server is no longer enough.
+
 ### M3½ — Desktop app (added October 2026)
 - A Windows and macOS app (Tauri) for people who want OpenChart on one laptop or PC without running a server or Docker.
 - Bundles the API with an embedded database; one local user; signed builds with automatic updates.

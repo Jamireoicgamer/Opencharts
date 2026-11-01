@@ -3,3 +3,6 @@ pnpm-lock.yaml
 *.md
 LICENSE
 NOTICE
+
+# Provider responses, kept as recorded.
+apps/api/tests/fixtures/
