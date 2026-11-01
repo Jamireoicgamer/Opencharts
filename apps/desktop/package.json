@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "stage": "node scripts/stage.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.3"

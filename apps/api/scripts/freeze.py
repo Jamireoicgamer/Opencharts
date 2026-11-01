@@ -4,11 +4,12 @@
     uv sync --group desktop
     uv run python apps/api/scripts/freeze.py [--out DIR]
 
-The result, ``DIR/openchart-api/openchart-api[.exe]``, runs ``migrate`` and
+The result, ``DIR/openchart-api[.exe]`` (plus ``DIR/_internal``), runs ``migrate`` and
 ``serve`` with no Python installed. The desktop app ships that folder.
 """
 
 import argparse
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -39,7 +40,7 @@ def main() -> None:
                 "--noconfirm",
                 "--clean",
                 "--console",
-                f"--distpath={args.out}",
+                f"--distpath={Path(work) / 'dist'}",
                 f"--workpath={Path(work) / 'build'}",
                 f"--specpath={work}",
                 # Alembic reads migrations from files; uvicorn and the
@@ -51,7 +52,11 @@ def main() -> None:
                 "--hidden-import=asyncpg.pgproto.pgproto",
             ]
         )
-    print(f"Frozen API: {args.out / 'openchart-api'}", file=sys.stderr)
+        # PyInstaller makes dist/openchart-api/; the app expects its contents in --out.
+        if args.out.exists():
+            shutil.rmtree(args.out)
+        shutil.move(Path(work) / "dist" / "openchart-api", args.out)
+    print(f"Frozen API: {args.out}", file=sys.stderr)
 
 
 if __name__ == "__main__":
