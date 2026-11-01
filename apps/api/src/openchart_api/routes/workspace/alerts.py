@@ -81,7 +81,7 @@ async def add_alert(body: AlertInput, user: User, request: Request, conn: Conn) 
     new_id = await conn.scalar(
         insert(alerts).values(user_id=user.id, **body.model_dump()).returning(alerts.c.id)
     )
-    _alerts_changed(request)
+    alerts_changed(request)
     return _alert((await conn.execute(_query().where(alerts.c.id == new_id))).one())
 
 
@@ -99,7 +99,7 @@ async def change_alert(
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alert not found")
     if "active" in values:
-        _alerts_changed(request)
+        alerts_changed(request)
     return _alert(row)
 
 
@@ -108,10 +108,10 @@ async def delete_alert(alert_id: UUID, user: User, request: Request, conn: Conn)
     result = await conn.execute(delete(alerts).where(alerts.c.id == alert_id))
     if result.rowcount == 0:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alert not found")
-    _alerts_changed(request)
+    alerts_changed(request)
 
 
-def _alerts_changed(request: Request) -> None:
+def alerts_changed(request: Request) -> None:
     """Tell the market-data hub which instruments it must watch for alerts."""
     if hub := getattr(request.app.state, "hub", None):
         hub.alerts_changed()

@@ -16,3 +16,5 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 secrets/
+target/
+apps/desktop/src-tauri/gen/

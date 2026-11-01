@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # whole API surface and load scripts from a CDN that the CSP blocks.
     api_docs: bool = False
     session_ttl_days: int = 30
+    # Serve the built web app from this folder, with nginx's security
+    # headers. Used by the desktop app; servers use nginx instead.
+    static_dir: str | None = None
     # Run the market-data hub: live prices, history fetching and alert checks.
     market_data: bool = True
     invite_ttl_hours: int = 72
