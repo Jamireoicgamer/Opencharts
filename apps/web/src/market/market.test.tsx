@@ -388,7 +388,7 @@ describe('data sources', () => {
     expect(settings.getByLabelText(/Twelve Data API key/)).toHaveValue('');
     const puts = api.calls.filter((c) => c.method === 'PUT' && c.path.startsWith('/admin'));
     expect(puts.map((c) => c.body)).toEqual([
-      { accept_terms: true },
+      { accept_terms: true, enabled: true },
       { api_key: 'td-secret-123456' },
     ]);
   });

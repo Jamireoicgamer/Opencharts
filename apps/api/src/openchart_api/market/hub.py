@@ -294,7 +294,9 @@ class Hub:
                 raise
             except Exception as exc:  # a feed must survive any provider failure
                 failures += 1
-                log.info("%s feed for %s failed: %s", provider.name, instrument_id, exc)
+                # Warn once per run of failures, so a long outage doesn't flood the log.
+                level = logging.WARNING if failures == 1 else logging.DEBUG
+                log.log(level, "%s feed for %s failed: %s", provider.name, instrument_id, exc)
                 self._set_status(instrument_id, "error", provider.name)
                 if failures >= FAILURES_BEFORE_FAILOVER:
                     self.router.mark_failed(provider, ref)
@@ -330,7 +332,7 @@ class Hub:
             try:
                 quote = await provider.quote(ref)
             except Exception as exc:  # try the next provider
-                log.info("%s quote for %s failed: %s", provider.name, instrument_id, exc)
+                log.warning("%s quote for %s failed: %s", provider.name, instrument_id, exc)
                 continue
             self.last[instrument_id] = quote
             return quote

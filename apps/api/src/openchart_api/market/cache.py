@@ -178,7 +178,7 @@ class CandleCache:
                 try:
                     bars = await provider.history(instrument, interval, span_start, span_end)
                 except Exception as exc:  # any provider failure means "try the next"
-                    log.info("%s history for %s failed: %s", provider.name, instrument.id, exc)
+                    log.warning("%s history for %s failed: %s", provider.name, instrument.id, exc)
                     continue
                 await self._store(instrument, interval, bars, provider.name, span_start, span_end)
                 used.append(provider.name)

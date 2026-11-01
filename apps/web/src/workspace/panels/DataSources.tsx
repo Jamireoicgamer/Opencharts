@@ -60,7 +60,13 @@ export function DataSources() {
                     checked={Boolean(s.terms_accepted)}
                     disabled={change.busy}
                     onChange={(e) =>
-                      void change.run(s.provider, { accept_terms: e.target.checked })
+                      void change.run(
+                        s.provider,
+                        // Accepting the terms is choosing to use the source.
+                        e.target.checked
+                          ? { accept_terms: true, enabled: true }
+                          : { accept_terms: false },
+                      )
                     }
                   />
                   <span>

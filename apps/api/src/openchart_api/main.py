@@ -69,8 +69,21 @@ async def _setup_token(app: FastAPI, settings: Settings) -> str | None:
     return token
 
 
+def _configure_logging() -> None:
+    """Give the app's own loggers a handler in uvicorn's style (uvicorn only
+    configures its own), so warnings such as failing data sources show up
+    with their level and source."""
+    app_log = logging.getLogger("openchart_api")
+    if not app_log.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s: %(message)s"))
+        app_log.addHandler(handler)
+        app_log.setLevel(logging.INFO)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()  # read from the environment
+    _configure_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
