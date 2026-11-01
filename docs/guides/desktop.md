@@ -12,7 +12,8 @@ Download the installer for your computer from the project's [releases](https://g
 |---|---|
 | Windows 10 or 11 (64-bit) | `OpenChart_…_x64-setup.exe` (or the `.msi`) |
 | Mac with Apple silicon (M1 or later) | `OpenChart_…_aarch64.dmg` |
-| Mac with an Intel processor | `OpenChart_…_x64.dmg` |
+
+Macs with an Intel processor aren't supported by the desktop app yet; run the [server version with Docker](../../README.md#run-on-your-server-with-docker) instead.
 
 **Windows:** run the installer. If SmartScreen says "Windows protected your PC", choose **More info**, then **Run anyway**. It installs for your user only, with no administrator rights needed.
 
@@ -64,7 +65,7 @@ The page in the window gets no access to the computer beyond what a browser tab 
 
 ## For maintainers: building and releasing
 
-The **Desktop app** workflow (`.github/workflows/desktop.yml`) builds on Windows, macOS (Apple silicon) and macOS (Intel). On each platform it smoke-tests the stack (fresh install, setup, a live Coinbase price, history, export, restart and sign-in) before building the installers.
+The **Desktop app** workflow (`.github/workflows/desktop.yml`) builds on Windows and macOS (Apple silicon). On each platform it smoke-tests the stack (fresh install, setup, a live Coinbase price, history, export, restart and sign-in) before building the installers.
 
 To build locally on Windows or macOS:
 

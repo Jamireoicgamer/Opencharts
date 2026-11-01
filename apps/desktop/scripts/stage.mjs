@@ -43,12 +43,12 @@ if (!existsSync(join(pkg, 'native'))) {
 const postgres = join(build, 'postgres');
 rmSync(postgres, { recursive: true, force: true });
 cpSync(join(pkg, 'native'), postgres, { recursive: true, dereference: true });
-// The package records symlinks separately; bundles can't rely on links, so copy.
+// The package records symlinks separately; bundles can't rely on links, so copy
+// every one: the binaries load some by unversioned name (libicui18n.dylib on
+// macOS) and others by versioned name (libicudata.so.60 on Linux).
 const links = join(postgres, 'pg-symlinks.json');
 if (existsSync(links)) {
   for (const { source, target } of JSON.parse(readFileSync(links, 'utf8'))) {
-    // Unversioned names (libpq.so, libpq.dylib) are only for compiling against.
-    if (/\.(so|dylib)$/.test(target)) continue;
     const from = join(postgres, source.replace(/^native\//, ''));
     const to = join(postgres, target.replace(/^native\//, ''));
     if (!existsSync(to)) cpSync(from, to);
@@ -76,7 +76,7 @@ cpSync(join(desktop, 'licenses', 'PostgreSQL.txt'), join(postgres, 'LICENSE-Post
 
 // The frozen API.
 const api = join(build, 'api', `openchart-api${exe}`);
-if (!existsSync(api)) {
+if (!existsSync(api) || !statSync(api).isFile()) {
   fail('no frozen API; run: uv sync --group desktop && uv run python apps/api/scripts/freeze.py');
 }
 
