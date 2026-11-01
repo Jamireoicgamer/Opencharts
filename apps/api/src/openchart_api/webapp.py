@@ -11,7 +11,11 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+# nginx's client_max_body_size.
+MAX_BODY_BYTES = 1024 * 1024
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -28,7 +32,62 @@ SECURITY_HEADERS = {
 _TYPES = {".webmanifest": "application/manifest+json"}
 
 
+class BodyLimit:
+    """Refuse request bodies over ``MAX_BODY_BYTES``, as nginx does on a server."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        length = dict(scope["headers"]).get(b"content-length")
+        if length is not None and (not length.isdigit() or int(length) > MAX_BODY_BYTES):
+            await _too_large(scope, receive, send)
+            return
+        received = 0
+        too_large = False
+
+        async def limited() -> Message:
+            nonlocal received, too_large
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > MAX_BODY_BYTES:
+                    # Stop reading; whatever the app answers becomes a 413.
+                    too_large = True
+                    return {"type": "http.disconnect"}
+            return message
+
+        replaced = False
+
+        async def checked(message: Message) -> None:
+            nonlocal replaced
+            if not too_large:
+                await send(message)
+            elif not replaced:
+                replaced = True
+                await _too_large(scope, receive, send)
+
+        try:
+            await self.app(scope, limited, checked)
+        except Exception:
+            if not too_large:
+                raise
+        if too_large and not replaced:
+            await _too_large(scope, receive, send)
+
+
+async def _too_large(scope: Scope, receive: Receive, send: Send) -> None:
+    response = JSONResponse({"detail": "Request too large"}, status.HTTP_413_CONTENT_TOO_LARGE)
+    await response(scope, receive, send)
+
+
 def add_security_headers(app: FastAPI) -> None:
+    """nginx's request size limit and response headers. Added last, so it's outermost."""
+    app.add_middleware(BodyLimit)
+
     @app.middleware("http")
     async def security_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]

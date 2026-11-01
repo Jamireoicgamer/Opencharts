@@ -86,3 +86,19 @@ async def test_no_files_outside_the_folder(web: httpx2.AsyncClient) -> None:
 
 async def test_off_without_static_dir(client: httpx2.AsyncClient) -> None:
     assert (await client.get("/")).status_code == 404
+
+
+async def test_large_bodies_are_refused(web: httpx2.AsyncClient) -> None:
+    from openchart_api.webapp import MAX_BODY_BYTES
+
+    big = b"x" * (MAX_BODY_BYTES + 1)
+    response = await web.post("/api/auth/login", content=big)
+    assert response.status_code == 413
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+    async def chunks() -> AsyncIterator[bytes]:  # no Content-Length: counted as it arrives
+        for _ in range(3):
+            yield b"x" * (MAX_BODY_BYTES // 2)
+
+    response = await web.post("/api/auth/login", content=chunks())
+    assert response.status_code == 413, response.text

@@ -61,9 +61,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     const data = await api<unknown>('GET', '/export');
     download(data, `openchart-export-${new Date().toISOString().slice(0, 10)}.json`);
   });
-  const importer = useSubmit(async (payload: () => Promise<unknown>, fromBrowser: boolean) => {
+  const importer = useSubmit(async (payload: () => Promise<object>, fromBrowser: boolean) => {
     setOutcome(null);
-    const result = await api<ImportResult>('POST', '/import/legacy', await payload());
+    const data = await payload();
+    // Our own exports (from the desktop app or a server) and the prototype's
+    // files go to different importers.
+    const path =
+      (data as { format?: unknown }).format === 'openchart-export' ? '/import' : '/import/legacy';
+    const result = await api<ImportResult>('POST', path, data);
     setOutcome(summarise(result));
     setImported(fromBrowser);
     reload();
@@ -103,7 +108,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       <h3 className="list-heading">Your data</h3>
       <p className="helper">
         Download everything in your workspace as JSON: watchlist, theses with every version,
-        research, holdings, alerts and preferences.
+        research, holdings, alerts and preferences. Import the file into OpenChart anywhere else,
+        such as the desktop app or a server, to move your workspace there.
       </p>
       <button
         type="button"
@@ -114,33 +120,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         Export my workspace
       </button>
       <ErrorMessage message={exporter.error} />
-
-      <h3 className="list-heading">Import from the prototype</h3>
-      {legacy ? (
-        <div className="notice">
-          <p>
-            This browser has data from the OpenChart prototype ({Object.keys(legacy.items).length}{' '}
-            saved items). Import it into your account to keep it.
-          </p>
-          <div className="row-inline">
-            <button
-              type="button"
-              className="button primary"
-              disabled={importer.busy}
-              onClick={() => void importer.run(async () => legacy, true)}
-            >
-              Import from this browser
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="helper">
-          No prototype data found in this browser. If you used the prototype elsewhere, choose
-          &ldquo;Export workspace&rdquo; there and upload the file here.
-        </p>
-      )}
       <label className="field">
-        <span>Upload openchart-workspace.json</span>
+        <span>Import an OpenChart export</span>
         <input
           type="file"
           accept="application/json,.json"
@@ -177,6 +158,30 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      <h3 className="list-heading">Import from the prototype</h3>
+      {legacy ? (
+        <div className="notice">
+          <p>
+            This browser has data from the OpenChart prototype ({Object.keys(legacy.items).length}{' '}
+            saved items). Import it into your account to keep it.
+          </p>
+          <div className="row-inline">
+            <button
+              type="button"
+              className="button primary"
+              disabled={importer.busy}
+              onClick={() => void importer.run(async () => legacy, true)}
+            >
+              Import from this browser
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="helper">
+          No prototype data found in this browser. If you used the prototype elsewhere, choose
+          &ldquo;Export workspace&rdquo; there and import the file above.
+        </p>
+      )}
       <h3 className="list-heading">Account</h3>
       <p className="helper">
         Sign-in methods, two-factor, sessions and API keys are on the{' '}
