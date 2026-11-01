@@ -57,6 +57,20 @@ The server needs outbound HTTPS to the sources you turn on:
 
 If a source can't be reached, the server log says which one and why, for example `WARNING: openchart_api.market.hub: coinbase feed for CRYPTO:BTC-USD failed: …`.
 
+## Rate limits
+
+Yahoo's unofficial endpoint limits how often it can be asked. OpenChart asks Yahoo once a minute per instrument, and identifies itself honestly rather than pretending to be a browser. If Yahoo refuses, the price shows as "not responding", and another enabled source takes over if one covers the instrument.
+
 ## Status
 
-The adapters are tested against responses written from each provider's documented format. As of November 2026 they have not been exercised against the live services, because the development environment couldn't reach them. If something doesn't look right, please open an issue with the server log lines for the source.
+Checked against the live services on 1 November 2026:
+
+- **Coinbase**: real-time BTC streamed (about 3 updates a second), with history from its candles API.
+- **Kraken**: took over seamlessly when Coinbase was switched off.
+- **Yahoo Finance**: BAE (in pence) and NVIDIA quotes labelled "delayed · as of …" and "market closed" at the weekend, with daily and hourly history.
+- **The cache**: a year of daily BTC history took 563 ms the first time and 18 ms the second.
+- **Alerts**: a BTC alert fired one second after it was set, while the price was live.
+
+The adapter tests use responses recorded from these services (`apps/api/scripts/record_market_fixtures.py`).
+
+**Twelve Data** is built and tested against its documented formats, but hasn't been tried with a real key yet. If you use it and something looks wrong, please open an issue with the server log lines.
