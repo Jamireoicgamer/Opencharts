@@ -57,6 +57,28 @@ describe('routing and sign-in', () => {
     });
   });
 
+  it('takes the desktop app’s setup token from the URL and removes it', async () => {
+    const api = mockApi({
+      'GET /setup/status': [200, { needs_setup: true }],
+      'POST /setup': [201, owner],
+      'GET /health': health,
+    });
+    window.history.pushState(null, '', '/setup#token=desktop-token-123');
+    renderAt('/setup');
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('Your name'), 'Ada');
+    expect(screen.queryByLabelText('Setup token')).not.toBeInTheDocument();
+    expect(window.location.hash).toBe('');
+    await user.type(screen.getByLabelText('Email'), 'owner@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.click(screen.getByRole('button', { name: 'Create owner account' }));
+    await screen.findByRole('heading', { name: 'Choose an instrument', level: 2 });
+    expect(api.calls.find((c) => c.path === '/setup')?.body).toMatchObject({
+      setup_token: 'desktop-token-123',
+    });
+    window.history.pushState(null, '', '/');
+  });
+
   it('redirects signed-out visitors to sign in, then back', async () => {
     mockApi({
       'GET /setup/status': [200, { needs_setup: false }],
