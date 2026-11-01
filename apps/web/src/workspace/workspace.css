@@ -290,6 +290,14 @@
   pointer-events: none;
 }
 
+.chart-credit {
+  float: right;
+}
+
+.chart-credit a {
+  color: inherit;
+}
+
 .chart-source {
   margin: 0;
   padding: 6px 12px;

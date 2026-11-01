@@ -22,8 +22,8 @@ TradingView Lightweight Charts(TM) 5.2.1
   Copyright 2023 TradingView, Inc. https://www.tradingview.com/
   Licensed under the Apache License, Version 2.0.
   https://github.com/tradingview/lightweight-charts
-  The chart shows the TradingView attribution link, as the licence's
-  attribution notice asks.
+  Each chart is credited with a "Chart by TradingView" link to
+  https://www.tradingview.com/, as the library's attribution notice asks.
 
 fancy-canvas 2.1.0 (a dependency of Lightweight Charts)
   Copyright (c) TradingView, Inc.

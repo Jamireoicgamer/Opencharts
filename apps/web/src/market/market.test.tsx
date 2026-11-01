@@ -199,7 +199,12 @@ describe('the chart and quote', () => {
     if (!chart) throw new Error('no chart');
     const [series] = chart.series;
     if (!series) throw new Error('no series');
-    expect(chart.options).toMatchObject({ layout: { attributionLogo: true } });
+    expect(chart.options).toMatchObject({ layout: { attributionLogo: false } });
+    // The licence's link to TradingView, given without the library's inline style.
+    expect(screen.getByRole('link', { name: 'TradingView' })).toHaveAttribute(
+      'href',
+      'https://www.tradingview.com/',
+    );
     expect(series.kind).toBe('Candlestick');
     expect(series.data).toHaveLength(3);
     expect(screen.getByText('History: Coinbase')).toBeInTheDocument();
@@ -208,7 +213,7 @@ describe('the chart and quote', () => {
       FakeSocket.last.open();
       FakeSocket.last.receive({ type: 'quote', ...quote({ at: hour(12), price: '70700' }) });
     });
-    expect(await screen.findByText('$70,700')).toBeInTheDocument();
+    expect(await screen.findByText('$70,700.00')).toBeInTheDocument();
     expect(screen.getByText('+2.71%')).toHaveAttribute('data-direction', 'up');
     expect(screen.getByText(/Coinbase · real-time/)).toBeInTheDocument();
     expect(series.updates.at(-1)).toMatchObject({ close: 70700, high: 70700 });
@@ -278,7 +283,7 @@ describe('prices in the panels', () => {
       });
     });
     const list = within(await screen.findByRole('complementary', { name: 'Watchlist' }));
-    expect(await list.findByText('$70,500.5')).toBeInTheDocument();
+    expect(await list.findByText('$70,500.50')).toBeInTheDocument();
     expect(list.getByText('no source')).toBeInTheDocument();
 
     await userEvent.click(
@@ -320,7 +325,7 @@ describe('prices in the panels', () => {
         at: hour(12),
       });
     });
-    const toast = await screen.findByText(/BTC-USD rose above \$70,000 · now \$70,500\.5/);
+    const toast = await screen.findByText(/BTC-USD rose above \$70,000\.00 · now \$70,500\.50/);
     expect(toast.closest('[role="alert"]')).toHaveTextContent('take profit?');
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss alert' }));
     expect(screen.queryByText(/rose above/)).not.toBeInTheDocument();

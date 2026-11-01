@@ -428,7 +428,9 @@ describe('formatting', () => {
     expect(amount('1234567.5000000000')).toBe('1,234,567.5');
     expect(amount('0.0000000100')).toBe('0.00000001');
     expect(money('1985.5000000000', 'GBX')).toBe('1,985.5p');
-    expect(money('70000.0000000000', 'USD')).toBe('$70,000');
+    expect(money('70000.0000000000', 'USD')).toBe('$70,000.00');
+    expect(money('77519.4', 'USD')).toBe('$77,519.40');
+    expect(money('0.0757146', 'USD')).toBe('$0.0757146');
     expect(money('5.0000000000', 'JPY')).toBe('5 JPY');
   });
 

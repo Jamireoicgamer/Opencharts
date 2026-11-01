@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Price chart on TradingView Lightweight Charts (Apache-2.0; attribution in
-// NOTICE and the logo the licence asks for stays on). History comes from the
-// API's cache; live quotes move the last bar.
+// NOTICE and as a link under the chart, see ChartArea). The library's own
+// logo is off because it injects an inline <style>, which our CSP blocks.
+// History comes from the API's cache; live quotes move the last bar.
 import {
   CandlestickSeries,
   ColorType,
@@ -115,7 +116,7 @@ export function PriceChart({
         background: { type: ColorType.Solid, color: cssVar('--surface', '#101215') },
         textColor: cssVar('--muted', '#848991'),
         fontFamily: cssVar('--font-sans', 'sans-serif'),
-        attributionLogo: true,
+        attributionLogo: false,
       },
       grid: {
         vertLines: { visible: false },

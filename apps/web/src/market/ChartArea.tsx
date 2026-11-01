@@ -91,6 +91,12 @@ export function ChartArea({
       <p className="chart-source">
         History: {history.sources.map((s) => SOURCE_LABELS[s] ?? s).join(', ') || 'saved prices'}
         {history.stale && ' · sources not responding, showing saved prices'}
+        <span className="chart-credit">
+          Chart by{' '}
+          <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">
+            TradingView
+          </a>
+        </span>
       </p>
     </>
   );

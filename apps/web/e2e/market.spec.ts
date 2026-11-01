@@ -20,7 +20,14 @@ function candles(count: number) {
   });
 }
 
+const violations: string[] = [];
+
 async function openOnBitcoin(page: Page) {
+  violations.length = 0;
+  page.on('console', (m) => {
+    if (m.type() === 'error' && m.text().includes('Content Security Policy'))
+      violations.push(m.text());
+  });
   const routes = workspaceRoutes();
   await fakeApi(page, {
     ...routes,
@@ -78,10 +85,16 @@ test('a live chart with a labelled price', async ({ page }) => {
   await expect(page.getByText(/Coinbase · real-time/)).toBeVisible();
   await expect(page.getByText('LIVE PRICES')).toBeVisible();
   await expect(page.getByText('History: Coinbase')).toBeVisible();
-  // Lightweight Charts drew on its canvases, with TradingView's attribution.
+  // Lightweight Charts drew on its canvases; TradingView is credited.
   const chart = page.getByTestId('price-chart');
   await expect(chart.locator('canvas').first()).toBeVisible();
-  await expect(chart.locator('a[href*="tradingview.com"]')).toHaveCount(1);
+  // The preview server sends the production CSP; nothing may break it.
+  expect(violations).toEqual([]);
+  await expect(page.getByRole('link', { name: 'TradingView' })).toHaveAttribute(
+    'href',
+    'https://www.tradingview.com/',
+  );
+
   expect(sent).toContainEqual({ type: 'watch', ids: [BTC] });
 });
 
