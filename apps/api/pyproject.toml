@@ -16,7 +16,7 @@ dependencies = [
     "pydantic-settings>=2.4",
     "segno>=1.6",
     "sqlalchemy[asyncio]>=2.0.30",
-    "uvicorn[standard]>=0.30",
+    "uvicorn[standard]>=0.54.0",
     "webauthn>=2.5",
     "websockets>=15",
 ]
