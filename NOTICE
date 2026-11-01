@@ -18,4 +18,13 @@ Third-party software bundled with OpenChart AI, and its licence, is listed
 below. Each entry's licence and attribution requirements apply to that
 component.
 
-(None bundled yet.)
+TradingView Lightweight Charts(TM) 5.2.1
+  Copyright 2023 TradingView, Inc. https://www.tradingview.com/
+  Licensed under the Apache License, Version 2.0.
+  https://github.com/tradingview/lightweight-charts
+  The chart shows the TradingView attribution link, as the licence's
+  attribution notice asks.
+
+fancy-canvas 2.1.0 (a dependency of Lightweight Charts)
+  Copyright (c) TradingView, Inc.
+  Licensed under the MIT License.

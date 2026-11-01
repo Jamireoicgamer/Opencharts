@@ -6,6 +6,8 @@ import { api } from '../../api';
 import { ErrorMessage, formValues } from '../../components/Form';
 import { amount, money, plain } from '../../format';
 import { useLoad, useSubmit } from '../../hooks';
+import { useQuotes } from '../../market/hooks';
+import { cash, marketValue, profit, signedCash, valuationCurrency } from '../../market/valuation';
 import { useWorkspace } from '../context';
 import { Icon } from '../Icon';
 import { Panel } from '../Panel';
@@ -33,6 +35,20 @@ export function PortfolioPanel({ onClose }: { onClose: () => void }) {
   const { instrument, prefs, updatePrefs } = useWorkspace();
   const load = useCallback(() => api<Position[]>('GET', '/positions'), []);
   const { data: positions, error, setData: setPositions } = useLoad(load);
+  const live = useQuotes([...new Set(positions?.map((p) => p.instrument.id) ?? [])]);
+  const priceOf = (p: Position) => live[p.instrument.id]?.quote?.price;
+  // Totals per currency; no conversion between currencies.
+  const totals = new Map<string, { value: number; profit: number; priced: number }>();
+  for (const p of positions ?? []) {
+    const price = priceOf(p);
+    if (!price) continue;
+    const currency = valuationCurrency(p.instrument.currency);
+    const total = totals.get(currency) ?? { value: 0, profit: 0, priced: 0 };
+    total.value += marketValue(p.quantity, price, p.instrument.currency);
+    total.profit += profit(p.quantity, p.average_price, price, p.instrument.currency) ?? 0;
+    total.priced += 1;
+    totals.set(currency, total);
+  }
   const [editing, setEditing] = useState<string | null>(null);
 
   const add = useSubmit(async (form: HTMLFormElement, values: Record<string, string>) => {
@@ -81,9 +97,22 @@ export function PortfolioPanel({ onClose }: { onClose: () => void }) {
           </select>
         </label>
       </div>
+      {totals.size > 0 && (
+        <section className="totals" aria-label="Market value by currency">
+          {[...totals].map(([currency, t]) => (
+            <div key={currency} className="metric">
+              <span>VALUE · {currency}</span>
+              <strong>{cash(t.value, currency)}</strong>
+              <small data-direction={t.profit > 0 ? 'up' : t.profit < 0 ? 'down' : 'flat'}>
+                {signedCash(t.profit, currency)} unrealised
+              </small>
+            </div>
+          ))}
+        </section>
+      )}
       <p className="helper">
-        Market value and profit appear once a live data source is connected. Nothing here is
-        estimated.
+        Values use the latest price from each instrument&rsquo;s source, in its own currency; profit
+        needs an average price. Holdings without a price show &ldquo;—&rdquo;.
       </p>
 
       {error && <p className="form-error">{error}</p>}
@@ -126,7 +155,8 @@ export function PortfolioPanel({ onClose }: { onClose: () => void }) {
                       <small>
                         {amount(p.quantity)} units
                         {p.average_price && ` at ${money(p.average_price, p.instrument.currency)}`}
-                        {' · value —'}
+                        {' · '}
+                        <HoldingValue position={p} price={priceOf(p)} />
                         {p.note && ` · ${p.note}`}
                       </small>
                     </div>
@@ -220,6 +250,23 @@ function PositionFields({ position, currency }: { position?: Position; currency?
           <input name="note" maxLength={500} defaultValue={position?.note} placeholder="Optional" />
         </label>
       </div>
+    </>
+  );
+}
+
+function HoldingValue({ position: p, price }: { position: Position; price: string | undefined }) {
+  if (!price) return <>value —</>;
+  const currency = valuationCurrency(p.instrument.currency);
+  const gain = profit(p.quantity, p.average_price, price, p.instrument.currency);
+  return (
+    <>
+      value {cash(marketValue(p.quantity, price, p.instrument.currency), currency)}
+      {gain !== null && (
+        <span data-direction={gain > 0 ? 'up' : gain < 0 ? 'down' : 'flat'}>
+          {' '}
+          ({signedCash(gain, currency)})
+        </span>
+      )}
     </>
   );
 }

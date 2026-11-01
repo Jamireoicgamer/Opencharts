@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useSubmit } from '../../hooks';
+import { money } from '../../format';
+import { useQuotes } from '../../market/hooks';
 import { ErrorMessage } from '../../components/Form';
 import { useWorkspace } from '../context';
 import { Icon } from '../Icon';
@@ -15,6 +17,7 @@ export function WatchlistPanel({
 }) {
   const { watchlist, instrument, select, removeFromWatchlist, reorderWatchlist } = useWorkspace();
   const action = useSubmit(async (work: () => Promise<void>) => work());
+  const live = useQuotes(watchlist.map((w) => w.id));
 
   function move(index: number, by: -1 | 1) {
     const ids = watchlist.map((w) => w.id);
@@ -57,6 +60,7 @@ export function WatchlistPanel({
                 <span className="watch-meta">
                   {item.exchange} · {ASSET_CLASS_LABELS[item.asset_class]} · {item.currency}
                 </span>
+                <WatchPrice live={live[item.id]} currency={item.currency} />
               </button>
               <div className="watch-actions">
                 <button
@@ -96,5 +100,34 @@ export function WatchlistPanel({
         <Icon name="plus" /> Add instruments
       </button>
     </Panel>
+  );
+}
+
+function WatchPrice({
+  live,
+  currency,
+}: {
+  live: ReturnType<typeof useQuotes>[string] | undefined;
+  currency: string;
+}) {
+  const quote = live?.quote;
+  if (!quote) {
+    return (
+      <span className="watch-price muted">
+        {live?.status?.state === 'no_source' ? 'no source' : '—'}
+      </span>
+    );
+  }
+  const pct = quote.change_pct === null ? null : Number(quote.change_pct);
+  return (
+    <span className="watch-price">
+      <span>{money(quote.price, currency)}</span>
+      {pct !== null && (
+        <span data-direction={pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat'}>
+          {pct > 0 ? '+' : ''}
+          {quote.change_pct}%
+        </span>
+      )}
+    </span>
   );
 }

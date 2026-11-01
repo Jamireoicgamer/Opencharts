@@ -65,6 +65,7 @@ class AlertFired:
     direction: str
     level: Decimal
     price: Decimal
+    currency: str
     note: str
     at: datetime
 
@@ -385,6 +386,7 @@ class Hub:
                 row.direction,
                 row.price,
                 quote.price,
+                quote.currency,
                 row.note,
                 quote.at,
             )

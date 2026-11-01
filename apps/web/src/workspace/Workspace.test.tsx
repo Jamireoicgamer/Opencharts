@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
+import { ReauthProvider } from '../components/Reauth';
 import { afterEach, describe, expect, it } from 'vitest';
 import { amount, money } from '../format';
 import { defaultPreferences, mockApi } from '../test-api';
@@ -52,10 +53,12 @@ function onBae(extra: Parameters<typeof mockApi>[0] = {}) {
   });
 }
 
-function renderWorkspace(path = '/') {
+function renderWorkspace(path = '/', role: 'owner' | 'member' = 'owner') {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <Workspace />
+      <ReauthProvider>
+        <Workspace role={role} />
+      </ReauthProvider>
     </MemoryRouter>,
   );
 }
@@ -69,8 +72,10 @@ describe('stage and search', () => {
     mockApi({});
     renderWorkspace();
     expect(await screen.findByRole('button', { name: /Choose an instrument/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'No data source connected' })).toBeInTheDocument();
-    expect(screen.getByText(/NO MARKET DATA CONNECTED/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Choose an instrument', level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/CONNECTING TO LIVE PRICES/)).toBeInTheDocument();
   });
 
   it('finds an instrument with Ctrl+K and remembers the choice', async () => {

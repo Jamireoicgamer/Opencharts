@@ -50,7 +50,7 @@ function SignedIn() {
       <div className="shell">
         <TopBar />
         <Routes>
-          <Route index element={<Workspace />} />
+          <Route index element={<Workspace role={session.user.role} />} />
           <Route path="account/*" element={<AccountPage user={session.user} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

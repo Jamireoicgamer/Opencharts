@@ -181,6 +181,7 @@ def _encode(event: Quote | FeedStatus | AlertFired) -> str:
             "direction": event.direction,
             "level": str(event.level),
             "price": str(event.price),
+            "currency": event.currency,
             "note": event.note,
             "at": event.at.isoformat(),
         }

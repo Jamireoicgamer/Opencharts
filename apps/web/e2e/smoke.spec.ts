@@ -6,7 +6,7 @@ test('signed-in user sees the app shell and API health', async ({ page }) => {
   await fakeApi(page, workspaceRoutes());
   await page.goto('/');
   await expect(page).toHaveTitle('OpenChart AI');
-  await expect(page.getByRole('heading', { name: 'No data source connected' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose an instrument', level: 2 })).toBeVisible();
   await expect(page.getByRole('status')).toHaveText('API: ok');
   await expect(page.getByRole('link', { name: 'Ada' })).toBeVisible();
 });
@@ -43,7 +43,7 @@ test('first run: setup, then manage devices from the account page', async ({ pag
   await page.getByLabel('Password').fill('correct horse battery');
   await page.getByRole('button', { name: 'Create owner account' }).click();
 
-  await expect(page.getByRole('heading', { name: 'No data source connected' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose an instrument', level: 2 })).toBeVisible();
   await page.getByRole('link', { name: 'Ada' }).click();
   await expect(page.getByRole('heading', { name: 'Signed-in devices' })).toBeVisible();
   await expect(page.getByText('This device')).toBeVisible();
