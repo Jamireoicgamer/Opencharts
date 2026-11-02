@@ -47,9 +47,7 @@ def _distinct(indicators: list[Indicator]) -> list[Indicator]:
     return indicators
 
 
-Indicators = Annotated[
-    list[Indicator], Field(max_length=MAX_INDICATORS), AfterValidator(_distinct)
-]
+Indicators = Annotated[list[Indicator], Field(max_length=MAX_INDICATORS), AfterValidator(_distinct)]
 
 
 class Preferences(BaseModel):
