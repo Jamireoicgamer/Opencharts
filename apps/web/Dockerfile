@@ -2,7 +2,7 @@
 # OpenChart AI web app, served by nginx. Build from the repository root:
 #   docker build -f apps/web/Dockerfile .
 
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 RUN corepack enable
 WORKDIR /src
 # Dependencies first, so code changes do not reinstall them.
