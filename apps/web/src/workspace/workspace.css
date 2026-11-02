@@ -373,9 +373,13 @@
   position: absolute;
   top: 10px;
   left: 12px;
+  /* Leave room for the drawing tools on the right. */
+  right: 124px;
   z-index: 2;
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  pointer-events: none;
   color: var(--muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;

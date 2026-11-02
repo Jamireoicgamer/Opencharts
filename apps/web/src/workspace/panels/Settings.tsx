@@ -39,6 +39,7 @@ export function summarise(result: ImportResult): string {
     [result.research, 'research page'],
     [result.positions, 'holding'],
     [result.alerts, 'alert'],
+    [result.drawings ?? 0, 'drawing'],
   ]
     .filter(([n]) => Number(n) > 0)
     .map(([n, label]) => `${n} ${label}${n === 1 ? '' : 's'}`);

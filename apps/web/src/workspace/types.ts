@@ -107,6 +107,7 @@ export interface ImportResult {
   research: number;
   positions: number;
   alerts: number;
+  drawings?: number;
   preferences: boolean;
   skipped_symbols: string[];
 }
