@@ -38,6 +38,7 @@ known-first-party = ["openchart_api"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "S105", "S106"]
+"packages/indicators/reference/test_*.py" = ["S101"]
 
 [tool.mypy]
 strict = true
@@ -50,5 +51,5 @@ module = ["asyncpg", "asyncpg.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["apps/api/tests"]
+testpaths = ["apps/api/tests", "packages/indicators/reference"]
 addopts = ["--import-mode=importlib"]
