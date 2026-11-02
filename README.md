@@ -10,7 +10,8 @@ A minimal, near-black, chart-first, self-hosted investment terminal with AI rese
 >   - delayed UK and US shares, ETFs, indices and FX from Yahoo Finance (opt-in) or your own Twelve Data key;
 >   - candlestick and line charts, with every price labelled with its source and delay;
 >   - live watchlist prices and holding values;
->   - price alerts checked on the server, even while the app is closed.
+>   - price alerts checked on the server, even while the app is closed;
+> - **pro charting, part one** (M4): indicators (moving averages, Bollinger Bands, VWAP, volume, RSI, MACD) and drawing tools (trend lines, levels, rectangles, Fibonacci retracements, notes), saved to your account — see the [charts guide](docs/guides/charts.md).
 >
 >
 > **New: a [desktop app](docs/guides/desktop.md) for Windows and macOS** (M3½) runs all of this on one computer, with no server or Docker. Early builds are unsigned.

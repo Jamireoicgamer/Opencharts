@@ -213,6 +213,98 @@
   color: var(--text);
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Indicators menu */
+.indicator-menu {
+  position: relative;
+}
+
+.indicator-menu .toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.indicator-menu .toolbar-button[aria-expanded='true'] {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.indicator-menu .count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.indicator-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+.indicator-popover p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.indicator-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.indicator-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.indicator-add {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.indicator-add .field {
+  flex: 1;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.indicator-add .field.period {
+  flex: 0 0 76px;
+}
+
+.ohlc .indicator-value {
+  color: var(--text);
+}
+
 .timeframes button[aria-pressed='true'] {
   background: var(--raised);
   color: var(--text);
@@ -281,9 +373,13 @@
   position: absolute;
   top: 10px;
   left: 12px;
+  /* Leave room for the drawing tools on the right. */
+  right: 124px;
   z-index: 2;
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  pointer-events: none;
   color: var(--muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
@@ -1234,5 +1330,140 @@ kbd {
 
   .palette-meta {
     display: none;
+  }
+}
+
+/* Drawing tools, over the chart's top-right corner (left of the price scale). */
+.drawing-tools {
+  position: absolute;
+  top: 8px;
+  right: 76px;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+
+.chart-tool {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chart-tool:hover,
+.chart-tool[aria-pressed='true'],
+.chart-tool[aria-expanded='true'] {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.chart-tool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.drawing-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.drawing-hint.error {
+  color: var(--red);
+}
+
+.drawing-selected {
+  position: absolute;
+  top: 44px;
+  right: 76px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 96px);
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.drawing-selected input {
+  width: 140px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch[aria-checked='true'] {
+  border-color: var(--text);
+}
+
+.swatch[data-color='accent'] {
+  background: var(--accent);
+}
+.swatch[data-color='amber'] {
+  background: var(--amber);
+}
+.swatch[data-color='blue'] {
+  background: var(--blue);
+}
+.swatch[data-color='pink'] {
+  background: var(--pink);
+}
+.swatch[data-color='green'] {
+  background: var(--green);
+}
+.swatch[data-color='red'] {
+  background: var(--red);
+}
+.swatch[data-color='muted'] {
+  background: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .drawing-tools,
+  .drawing-selected {
+    right: 62px;
+  }
+
+  .drawing-selected {
+    flex-wrap: wrap;
   }
 }

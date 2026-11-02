@@ -15,6 +15,10 @@ export const color = {
   green: '#39c7a1',
   red: '#e87780',
   accent: '#b4abff',
+  // Indicator lines, distinct from the candles and from each other.
+  amber: '#e8b65a',
+  blue: '#6aaef2',
+  pink: '#e98fc6',
 } as const;
 
 export const motion = {

@@ -204,3 +204,33 @@ async def test_thesis_history_cannot_be_rewritten(
         await set_rls_context(conn, owner_id, "owner")
         with pytest.raises(DBAPIError, match="permission denied"):
             await conn.execute(text("UPDATE thesis_versions SET summary = 'rewritten'"))
+
+
+async def test_indicator_preferences(owner: httpx2.AsyncClient) -> None:
+    chosen = [
+        {"kind": "ema", "period": 20},
+        {"kind": "ema", "period": 50},
+        {"kind": "rsi"},
+        {"kind": "macd"},
+        {"kind": "volume"},
+    ]
+    saved = (await owner.put("/api/preferences", json={"indicators": chosen})).json()
+    assert saved["indicators"][2] == {"kind": "rsi", "period": 14}  # default period filled in
+    assert saved["indicators"][3] == {"kind": "macd", "period": None}
+    assert (await owner.get("/api/preferences")).json()["indicators"] == saved["indicators"]
+    # Other changes leave them alone.
+    after = (await owner.put("/api/preferences", json={"compact": True})).json()
+    assert after["indicators"] == saved["indicators"]
+
+    for bad in (
+        [{"kind": "sma", "period": 1}],
+        [{"kind": "sma", "period": 401}],
+        [{"kind": "macd", "period": 9}],
+        [{"kind": "ichimoku"}],
+        [{"kind": "ema", "period": 20}, {"kind": "ema", "period": 20}],
+        [{"kind": "sma", "period": p} for p in range(2, 13)],
+        [{"kind": "sma", "period": 20, "colour": "red"}],
+    ):
+        response = await owner.put("/api/preferences", json={"indicators": bad})
+        assert response.status_code == 422, bad
+    assert (await owner.get("/api/preferences")).json()["indicators"] == saved["indicators"]

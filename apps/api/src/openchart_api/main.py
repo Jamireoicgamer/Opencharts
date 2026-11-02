@@ -36,6 +36,7 @@ from openchart_api.routes import (
 from openchart_api.routes import secrets as secrets_routes
 from openchart_api.routes.workspace import (
     alerts,
+    drawings,
     instruments,
     positions,
     preferences,
@@ -155,6 +156,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         research,
         positions,
         alerts,
+        drawings,
         preferences,
         transfer,
         market,

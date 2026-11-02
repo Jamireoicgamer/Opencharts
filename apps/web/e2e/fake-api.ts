@@ -38,9 +38,13 @@ export function workspaceRoutes(): Record<string, Answer> {
     compact: false,
     risk_profile: 'balanced',
     last_instrument: null,
+    indicators: [],
   };
   let watchlist: string[] = [];
   const theses: Record<string, Record<string, unknown>[]> = {};
+  let drawings: Record<string, unknown>[] = [];
+  let nextDrawing = 1;
+  const drawingId = (url: URL) => url.pathname.split('/')[5] ?? '';
   const find = (id: string) => CATALOGUE.find((i) => i.id === id);
   const watch = () => watchlist.map((id) => ({ ...find(id), added_at: at() }));
   const idFrom = (url: URL) => decodeURIComponent(url.pathname.split('/')[3] ?? '');
@@ -67,6 +71,30 @@ export function workspaceRoutes(): Record<string, Answer> {
       };
     },
     'GET /instruments/*': (_body, url) => ({ json: find(idFrom(url)) }),
+    'GET /instruments/*/drawings': (_body, url) => ({
+      json: drawings.filter((d) => d.instrument_id === idFrom(url)),
+    }),
+    'POST /instruments/*/drawings': (body, url) => {
+      const created = {
+        ...(body as object),
+        id: `d${nextDrawing++}`,
+        instrument_id: idFrom(url),
+        created_at: at(),
+        updated_at: at(),
+      };
+      drawings = [...drawings, created];
+      return { status: 201, json: created };
+    },
+    'PATCH /instruments/*/drawings/*': (body, url) => {
+      drawings = drawings.map((d) =>
+        d.id === drawingId(url) ? { ...d, ...(body as object), updated_at: at() } : d,
+      );
+      return { json: drawings.find((d) => d.id === drawingId(url)) };
+    },
+    'DELETE /instruments/*/drawings/*': (_body, url) => {
+      drawings = drawings.filter((d) => d.id !== drawingId(url));
+      return { status: 204 };
+    },
     'GET /instruments/*/thesis': (_body, url) => {
       const history = theses[idFrom(url)] ?? [];
       return { json: { current: history[0] ?? null, history } };

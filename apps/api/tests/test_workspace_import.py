@@ -75,6 +75,7 @@ async def test_export_moves_to_another_account(
         "research": 1,
         "positions": 1,
         "alerts": 1,
+        "drawings": 0,
         "preferences": True,
         "skipped_symbols": [],
     }

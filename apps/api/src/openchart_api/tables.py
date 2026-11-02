@@ -260,6 +260,20 @@ alerts = Table(
     Column("triggered_at", DateTime(timezone=True)),
 )
 
+drawings = Table(
+    "drawings",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=FetchedValue()),
+    Column("user_id", Uuid, nullable=False),
+    Column("instrument_id", Text, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("points", JSONB, nullable=False),
+    Column("color", Text, nullable=False, server_default=FetchedValue()),
+    Column("text", Text, nullable=False, server_default=FetchedValue()),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=FetchedValue()),
+)
+
 user_preferences = Table(
     "user_preferences",
     metadata,

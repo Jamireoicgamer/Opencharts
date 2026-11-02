@@ -33,6 +33,13 @@ const PATHS = {
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
   candle: <path d="M6 2v20M18 2v20M3 7h6v9H3zM15 10h6v7h-6z" />,
+  indicators: <path d="M3 17c3-1 4-8 7-8s3 6 6 6 4-9 5-11M3 21h18" />,
+  pen: <path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3" />,
+  trend: <path d="M4 19 20 5M4 19h.01M20 5h.01" />,
+  hline: <path d="M3 12h18M7 8h.01M17 16h.01" />,
+  rect: <path d="M5 6h14v12H5z" />,
+  fib: <path d="M3 5h18M3 10h18M3 14h18M3 19h18M6 5l12 14" />,
+  note: <path d="M5 4h14v12l-4 4H5zM15 20v-4h4M8 9h8M8 13h5" />,
   line: <path d="m2 16 5-5 5 3 4-8 6 4" />,
   doc: (
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8" />

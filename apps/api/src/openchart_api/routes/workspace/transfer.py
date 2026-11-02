@@ -23,6 +23,7 @@ from openchart_api.routes.workspace.alerts import (
 )
 from openchart_api.routes.workspace.alerts import Note as AlertNote
 from openchart_api.routes.workspace.common import InstrumentIdField, Money
+from openchart_api.routes.workspace.drawings import MAX_DRAWINGS, DrawingInput, list_drawings
 from openchart_api.routes.workspace.positions import (
     MAX_POSITIONS,
     Account,
@@ -34,6 +35,7 @@ from openchart_api.routes.workspace.thesis import HISTORY_LIMIT, ThesisInput
 from openchart_api.routes.workspace.watchlist import MAX_ITEMS
 from openchart_api.tables import (
     alerts,
+    drawings,
     instruments,
     positions,
     research_notes,
@@ -54,6 +56,7 @@ class ImportResult(BaseModel):
     research: int
     positions: int
     alerts: int
+    drawings: int = 0
     preferences: bool
     skipped_symbols: list[str]
 
@@ -92,7 +95,22 @@ async def export_workspace(user: User, request: Request, conn: Conn) -> dict[str
         "research": research,
         "positions": [p.model_dump() for p in await list_positions(user, conn)],
         "alerts": [a.model_dump() for a in await list_alerts(user, conn)],
+        "drawings": _drawings_by_instrument(await list_drawings(conn)),
     }
+
+
+def _point_key(points: list[dict[str, Any]]) -> tuple[tuple[int, float], ...]:
+    # The database may return 70000 where the file has 70000.0.
+    return tuple((int(p["t"]), float(p["price"])) for p in points)
+
+
+def _drawings_by_instrument(items: list[Any]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for d in items:
+        grouped.setdefault(d.instrument_id, []).append(
+            d.model_dump(include={"kind", "points", "color", "text"})
+        )
+    return grouped
 
 
 class _Loose(BaseModel):
@@ -134,6 +152,10 @@ class _ExportedAlert(_Loose):
     active: bool = True
 
 
+class _ExportedDrawing(DrawingInput, _Loose):
+    model_config = ConfigDict(extra="ignore")
+
+
 class WorkspaceExport(_Loose):
     """The file ``GET /export`` produces."""
 
@@ -150,6 +172,10 @@ class WorkspaceExport(_Loose):
     ] = {}
     positions: Annotated[list[_ExportedPosition], Field(max_length=MAX_POSITIONS)] = []
     alerts: Annotated[list[_ExportedAlert], Field(max_length=MAX_ALERTS)] = []
+    drawings: Annotated[
+        dict[InstrumentIdField, Annotated[list[_ExportedDrawing], Field(max_length=MAX_DRAWINGS)]],
+        Field(max_length=MAX_ITEMS),
+    ] = {}
 
 
 def _same(a: Decimal | None, b: Decimal | None) -> bool:
@@ -327,6 +353,29 @@ async def import_workspace(
     if added_alerts:
         alerts_changed(request)
 
+    added_drawings = 0
+    for iid, items in data.drawings.items():
+        if not usable(iid):
+            continue
+        existing_drawings = {
+            (r.kind, _point_key(r.points), r.text)
+            for r in await conn.execute(
+                select(drawings.c.kind, drawings.c.points, drawings.c.text).where(
+                    drawings.c.instrument_id == iid
+                )
+            )
+        }
+        for item in items:
+            values = item.model_dump(include={"kind", "points", "color", "text"})
+            key = (item.kind, _point_key(values["points"]), item.text)
+            if key in existing_drawings or len(existing_drawings) >= MAX_DRAWINGS:
+                continue
+            await conn.execute(
+                insert(drawings).values(user_id=user.id, instrument_id=iid, **values)
+            )
+            existing_drawings.add(key)
+            added_drawings += 1
+
     if prefs:
         await prefs_module.save(conn, user.id, merged)
 
@@ -336,6 +385,7 @@ async def import_workspace(
         research=touched_research,
         positions=added_positions,
         alerts=added_alerts,
+        drawings=added_drawings,
         preferences=bool(prefs),
         skipped_symbols=sorted(skipped)[:50],
     )

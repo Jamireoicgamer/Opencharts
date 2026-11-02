@@ -11,3 +11,4 @@ apps/api/tests/fixtures/
 apps/desktop/build/
 apps/desktop/target/
 apps/desktop/src-tauri/gen/
+packages/indicators/fixtures/

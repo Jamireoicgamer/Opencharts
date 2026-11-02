@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { lazy, Suspense } from 'react';
 import { Link } from 'react-router';
+import type { Indicator } from '../workspace/types';
 import { useCandles, type Live } from './hooks';
+import { useDrawings } from './useDrawings';
 import { SOURCE_LABELS } from './types';
 
 // The chart library is loaded on first use, keeping the first page load small.
@@ -14,6 +16,7 @@ export function ChartArea({
   chartType,
   showGrid,
   showOhlc,
+  indicators,
   canConfigure,
 }: {
   instrumentId: string;
@@ -22,10 +25,12 @@ export function ChartArea({
   chartType: 'candle' | 'line';
   showGrid: boolean;
   showOhlc: boolean;
+  indicators: Indicator[];
   /** Owners and admins can turn sources on, so they get a link to do it. */
   canConfigure: boolean;
 }) {
   const { state, retry } = useCandles(instrumentId, period);
+  const drawings = useDrawings(instrumentId);
 
   if (state.status === 'loading') {
     return (
@@ -86,6 +91,8 @@ export function ChartArea({
           chartType={chartType}
           showGrid={showGrid}
           showOhlc={showOhlc}
+          indicators={indicators}
+          drawings={drawings}
         />
       </Suspense>
       <p className="chart-source">

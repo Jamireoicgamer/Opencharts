@@ -9,9 +9,11 @@ WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/ui/package.json packages/ui/package.json
+COPY packages/indicators/package.json packages/indicators/package.json
 RUN pnpm install --frozen-lockfile --filter "@opencharts/web..."
 COPY tsconfig.base.json ./
 COPY packages/ui packages/ui
+COPY packages/indicators/src packages/indicators/src
 COPY apps/web apps/web
 RUN pnpm --filter @opencharts/web build
 

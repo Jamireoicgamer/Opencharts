@@ -66,6 +66,7 @@ async def test_import_the_prototype_export(owner: httpx2.AsyncClient) -> None:
         "research": 1,
         "positions": 1,
         "alerts": 1,
+        "drawings": 0,
         "preferences": True,
         "skipped_symbols": ["MYSTERY"],
     }

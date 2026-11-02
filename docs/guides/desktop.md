@@ -48,7 +48,7 @@ Export and import work the same everywhere:
 1. On the computer or server you're leaving: **Settings → Your data → Export my workspace**.
 2. On the other one: **Settings → Your data → Import an OpenChart export**, and choose the file.
 
-The export carries your watchlist, theses with every version, research notes and checklists, holdings, alerts and preferences. Importing merges into what's already there, and importing the same file twice adds nothing. Instruments the other side doesn't know are listed as skipped. Accounts, passwords, passkeys, two-factor and data-source keys are not in the export; set those up again on the other side.
+The export carries your watchlist, theses with every version, research notes and checklists, holdings, alerts, chart drawings and preferences (including indicators). Importing merges into what's already there, and importing the same file twice adds nothing. Instruments the other side doesn't know are listed as skipped. Accounts, passwords, passkeys, two-factor and data-source keys are not in the export; set those up again on the other side.
 
 ## Updates
 
