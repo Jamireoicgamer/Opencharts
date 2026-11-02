@@ -21,17 +21,12 @@ function candles(count: number) {
 }
 
 const violations: string[] = [];
+let prefs: Record<string, unknown> = {};
 
-async function openOnBitcoin(page: Page) {
+async function openOnBitcoin(page: Page, fresh = true) {
   violations.length = 0;
-  page.on('console', (m) => {
-    if (m.type() === 'error' && m.text().includes('Content Security Policy'))
-      violations.push(m.text());
-  });
-  const routes = workspaceRoutes();
-  await fakeApi(page, {
-    ...routes,
-    'GET /preferences': {
+  if (fresh) {
+    prefs = {
       chart_type: 'candle',
       period: '1W',
       show_grid: true,
@@ -39,6 +34,20 @@ async function openOnBitcoin(page: Page) {
       compact: false,
       risk_profile: 'balanced',
       last_instrument: BTC,
+      indicators: [],
+    };
+  }
+  page.on('console', (m) => {
+    if (m.type() === 'error' && m.text().includes('Content Security Policy'))
+      violations.push(m.text());
+  });
+  const routes = workspaceRoutes();
+  await fakeApi(page, {
+    ...routes,
+    'GET /preferences': () => ({ json: prefs }),
+    'PUT /preferences': (body) => {
+      prefs = { ...prefs, ...(body as object) };
+      return { json: prefs };
     },
     'GET /market/candles/*': {
       instrument_id: BTC,
@@ -96,6 +105,33 @@ test('a live chart with a labelled price', async ({ page }) => {
   );
 
   expect(sent).toContainEqual({ type: 'watch', ids: [BTC] });
+});
+
+test('indicators are added from the toolbar and survive a reload', async ({ page }) => {
+  await openOnBitcoin(page);
+  await expect(page.getByText('$70,512.25')).toBeVisible();
+  const chart = page.getByTestId('price-chart');
+  const panesBefore = await chart.locator('canvas').count();
+
+  await page.getByRole('button', { name: 'Indicators' }).click();
+  const menu = page.getByRole('group', { name: 'Indicators' });
+  await menu.getByRole('button', { name: 'Add' }).click(); // EMA 20 is the default
+  await menu.getByLabel('Indicator').selectOption('rsi');
+  await menu.getByRole('button', { name: 'Add' }).click();
+  await expect(menu.getByText('RSI 14', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByText(/^EMA 20 \d/)).toBeVisible();
+  await expect(page.getByText(/^RSI 14 \d/)).toBeVisible();
+  // RSI draws in a new pane, which brings its own canvases.
+  await expect.poll(() => chart.locator('canvas').count()).toBeGreaterThan(panesBefore);
+  await page.screenshot({ path: 'test-results/indicators.png' });
+
+  await page.reload();
+  await openOnBitcoin(page, false);
+  await expect(page.getByText(/^RSI 14 \d/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Indicators' })).toContainText('2');
+  expect(violations).toEqual([]);
 });
 
 test.describe('on a phone', () => {

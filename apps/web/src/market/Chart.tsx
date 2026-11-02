@@ -3,18 +3,31 @@
 // NOTICE and as a link under the chart, see ChartArea). The library's own
 // logo is off because it injects an inline <style>, which our CSP blocks.
 // History comes from the API's cache; live quotes move the last bar.
+// Indicators come from @opencharts/indicators and are recomputed on each
+// live update (well under a millisecond for a chart's worth of bars).
 import {
   CandlestickSeries,
   ColorType,
   CrosshairMode,
+  HistogramSeries,
   LineSeries,
+  LineStyle,
   createChart,
   type IChartApi,
   type ISeriesApi,
   type SeriesType,
   type UTCTimestamp,
 } from 'lightweight-charts';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Indicator } from '../workspace/types';
+import {
+  indicatorLines,
+  panesFor,
+  toBars,
+  type Bar as IndicatorBar,
+  type IndicatorLine,
+  type PaneKind,
+} from './indicators';
 import type { Candle, History, Quote } from './types';
 
 const INTERVAL_SECONDS = { '5m': 300, '1h': 3600, '1d': 86400 } as const;
@@ -84,25 +97,57 @@ export function advance(
   return null;
 }
 
+/** The indicator bars with the live bar applied (its volume stays as it was). */
+function withLiveBar(bars: IndicatorBar[], live: Bar): IndicatorBar[] {
+  const last = bars.at(-1);
+  const next = { t: live.time, open: live.open, high: live.high, low: live.low, close: live.close };
+  if (last && last.t === live.time) return [...bars.slice(0, -1), { ...next, volume: last.volume }];
+  return [...bars, { ...next, volume: null }];
+}
+
+type Point = { time: UTCTimestamp; value: number; color?: string };
+
+function points(line: IndicatorLine, bars: readonly IndicatorBar[], color: (v: string) => string) {
+  const out: Point[] = [];
+  line.values.forEach((value, i) => {
+    const bar = bars[i];
+    if (value == null || !bar) return;
+    const c = line.colors?.[i];
+    out.push({ time: bar.t as UTCTimestamp, value, ...(c ? { color: color(c) } : {}) });
+  });
+  return out;
+}
+
+export interface Readout {
+  label: string;
+  value: number;
+}
+
 export function PriceChart({
   history,
   quote,
   chartType,
   showGrid,
   showOhlc,
+  indicators = [],
 }: {
   history: History;
   quote: Quote | undefined;
   chartType: 'candle' | 'line';
   showGrid: boolean;
   showOhlc: boolean;
+  indicators?: Indicator[];
 }) {
   const container = useRef<HTMLDivElement>(null);
-  const chart = useRef<IChartApi | null>(null);
   const series = useRef<ISeriesApi<SeriesType> | null>(null);
+  const extra = useRef<Map<string, ISeriesApi<SeriesType>>>(new Map());
   const last = useRef<Bar | null>(null);
-  const [hover, setHover] = useState<Bar | null>(null);
+  const [hover, setHover] = useState<{ bar: Bar; index: number } | null>(null);
   const weekly = history.period === 'ALL';
+  // Rebuild only when the chosen indicators really change.
+  const indicatorKey = JSON.stringify(indicators);
+  const chosen = useMemo(() => JSON.parse(indicatorKey) as Indicator[], [indicatorKey]);
+  const baseBars = useMemo(() => toBars(history.candles), [history]);
 
   // Create the chart and series, and load history.
   useEffect(() => {
@@ -110,13 +155,15 @@ export function PriceChart({
     if (!element) return;
     const bars = history.candles.map(toBar);
     const intraday = history.interval !== '1d';
-    const api = createChart(element, {
+    const color = (name: string) => cssVar(name, '#848991');
+    const api: IChartApi = createChart(element, {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: cssVar('--surface', '#101215') },
         textColor: cssVar('--muted', '#848991'),
         fontFamily: cssVar('--font-sans', 'sans-serif'),
         attributionLogo: false,
+        panes: { separatorColor: cssVar('--line', '#25282d') },
       },
       grid: {
         vertLines: { visible: false },
@@ -146,23 +193,83 @@ export function PriceChart({
           })
         : api.addSeries(LineSeries, { color: up, lineWidth: 2, priceFormat });
     s.setData(chartType === 'candle' ? bars : bars.map((b) => ({ time: b.time, value: b.close })));
+
+    // Indicators: overlays on the price, oscillators in panes below.
+    const lines = indicatorLines(chosen, baseBars);
+    const paneIndex: Record<PaneKind, number> = { price: 0, volume: 0, rsi: 0, macd: 0 };
+    panesFor(lines).forEach((pane, i) => (paneIndex[pane] = i + 1));
+    const added = new Map<string, ISeriesApi<SeriesType>>();
+    for (const line of lines) {
+      const common = {
+        priceLineVisible: false,
+        lastValueVisible: line.pane !== 'price' && line.pane !== 'volume',
+        title: '',
+      };
+      const target =
+        line.kind === 'histogram'
+          ? api.addSeries(
+              HistogramSeries,
+              {
+                ...common,
+                color: color(line.color),
+                ...(line.pane === 'volume'
+                  ? { priceScaleId: 'volume', priceFormat: { type: 'volume' as const } }
+                  : {}),
+              },
+              paneIndex[line.pane],
+            )
+          : api.addSeries(
+              LineSeries,
+              {
+                ...common,
+                color: color(line.color),
+                lineWidth: line.pane === 'price' ? 1 : 2,
+                lineStyle: line.kind === 'dashed' ? LineStyle.Dashed : LineStyle.Solid,
+                crosshairMarkerVisible: false,
+                ...(line.pane === 'price' ? { priceFormat } : {}),
+              },
+              paneIndex[line.pane],
+            );
+      if (line.pane === 'volume') {
+        target.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+      }
+      if (line.pane === 'rsi') {
+        for (const level of [70, 30]) {
+          target.createPriceLine({
+            price: level,
+            color: cssVar('--line', '#25282d'),
+            lineStyle: LineStyle.Dashed,
+            lineWidth: 1,
+            axisLabelVisible: false,
+          });
+        }
+      }
+      target.setData(points(line, baseBars, color));
+      added.set(line.id, target);
+    }
+    // The price keeps most of the height; each indicator pane gets a strip.
+    const panes = api.panes();
+    panes.forEach((pane, i) => pane.setStretchFactor(i === 0 ? 3 : 1));
+
     api.timeScale().fitContent();
+    const indexOf = new Map(bars.map((b, i) => [b.time as number, i]));
     api.subscribeCrosshairMove((param) => {
-      const bar = param.time === undefined ? undefined : bars.find((b) => b.time === param.time);
-      setHover(bar ?? null);
+      const index = param.time === undefined ? undefined : indexOf.get(param.time as number);
+      const bar = index === undefined ? undefined : bars[index];
+      setHover(bar && index !== undefined ? { bar, index } : null);
     });
-    chart.current = api;
     series.current = s;
+    extra.current = added;
     last.current = bars.at(-1) ?? null;
     return () => {
       api.remove();
-      chart.current = null;
       series.current = null;
+      extra.current = new Map();
     };
-    // Rebuild when the data or the look changes.
-  }, [history, chartType, showGrid]);
+    // Rebuild when the data, the look or the indicators change.
+  }, [history, chartType, showGrid, chosen, baseBars]);
 
-  // Move the last bar with live quotes.
+  // Move the last bar, and the indicators, with live quotes.
   useEffect(() => {
     const s = series.current;
     const bar = last.current;
@@ -171,7 +278,18 @@ export function PriceChart({
     if (!next) return;
     last.current = next;
     s.update(chartType === 'candle' ? next : { time: next.time, value: next.close });
-  }, [quote, history, chartType, weekly]);
+    if (extra.current.size === 0) return;
+    const bars = withLiveBar(baseBars, next);
+    const color = (name: string) => cssVar(name, '#848991');
+    for (const line of indicatorLines(chosen, bars)) {
+      const target = extra.current.get(line.id);
+      const value = line.values.at(-1);
+      // Volume isn't in quotes; leave its bar as it was.
+      if (!target || value == null || line.pane === 'volume') continue;
+      const c = line.colors?.at(-1);
+      target.update({ time: next.time, value, ...(c ? { color: color(c) } : {}) });
+    }
+  }, [quote, history, chartType, weekly, chosen, baseBars]);
 
   const lastBar = history.candles.at(-1);
   const latest = lastBar ? toBar(lastBar) : null;
@@ -179,18 +297,41 @@ export function PriceChart({
     latest && quote?.instrument_id === history.instrument_id
       ? (advance(latest, quote, history.interval, weekly) ?? latest)
       : latest;
-  const shown = hover ?? live;
+  const shown = hover?.bar ?? live;
   const digits = precisionFor(latest?.close ?? 1);
-  const fmt = (n: number) =>
-    n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const fmt = (n: number, places = digits) =>
+    n.toLocaleString(undefined, { minimumFractionDigits: places, maximumFractionDigits: places });
+  // Hovering shows that bar's values; otherwise the latest, live ones.
+  const readoutBars = hover || !live ? baseBars : withLiveBar(baseBars, live);
+  const readoutIndex = hover?.index ?? readoutBars.length - 1;
+  const readouts =
+    chosen.length === 0
+      ? []
+      : indicatorLines(chosen, readoutBars)
+          .filter(
+            (l) => l.pane !== 'volume' && !l.label.endsWith('upper') && !l.label.endsWith('lower'),
+          )
+          .flatMap((l): Readout[] => {
+            const value = l.values[readoutIndex];
+            return value == null ? [] : [{ label: l.label.replace(' middle', ''), value }];
+          });
   return (
     <div className="price-chart">
-      {showOhlc && shown && (
-        <div className="ohlc" aria-label="Open, high, low, close">
-          <span>O {fmt(shown.open)}</span>
-          <span>H {fmt(shown.high)}</span>
-          <span>L {fmt(shown.low)}</span>
-          <span>C {fmt(shown.close)}</span>
+      {(showOhlc || readouts.length > 0) && (
+        <div className="ohlc" aria-label="Chart values">
+          {showOhlc && shown && (
+            <>
+              <span>O {fmt(shown.open)}</span>
+              <span>H {fmt(shown.high)}</span>
+              <span>L {fmt(shown.low)}</span>
+              <span>C {fmt(shown.close)}</span>
+            </>
+          )}
+          {readouts.map((r) => (
+            <span key={r.label} className="indicator-value">
+              {r.label} {fmt(r.value, /^(RSI|MACD)/.test(r.label) ? 2 : digits)}
+            </span>
+          ))}
         </div>
       )}
       <div ref={container} className="chart-canvas" data-testid="price-chart" />

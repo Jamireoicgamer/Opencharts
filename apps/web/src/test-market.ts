@@ -45,9 +45,18 @@ export class FakeSocket {
   }
 }
 
+export interface FakeSeries {
+  kind: string;
+  options: Record<string, unknown>;
+  pane: number;
+  data: unknown[];
+  updates: unknown[];
+  priceLines: unknown[];
+}
+
 export interface FakeChart {
   options: Record<string, unknown>;
-  series: { kind: string; data: unknown[]; updates: unknown[] }[];
+  series: FakeSeries[];
   removed: boolean;
 }
 
@@ -56,21 +65,36 @@ export const charts: FakeChart[] = [];
 export const chartModule = {
   ColorType: { Solid: 'solid' },
   CrosshairMode: { Normal: 0 },
+  LineStyle: { Solid: 0, Dotted: 1, Dashed: 2 },
   CandlestickSeries: { type: 'Candlestick' },
   LineSeries: { type: 'Line' },
+  HistogramSeries: { type: 'Histogram' },
   createChart: vi.fn((_el: HTMLElement, options: Record<string, unknown>) => {
     const chart: FakeChart = { options, series: [], removed: false };
     charts.push(chart);
     return {
-      addSeries: (definition: { type: string }) => {
-        const entry = { kind: definition.type, data: [] as unknown[], updates: [] as unknown[] };
+      addSeries: (definition: { type: string }, seriesOptions = {}, pane = 0) => {
+        const entry: FakeSeries = {
+          kind: definition.type,
+          options: seriesOptions,
+          pane,
+          data: [],
+          updates: [],
+          priceLines: [],
+        };
         chart.series.push(entry);
         return {
           setData: (data: unknown[]) => {
             entry.data = data;
           },
           update: (bar: unknown) => entry.updates.push(bar),
+          createPriceLine: (line: unknown) => entry.priceLines.push(line),
+          priceScale: () => ({ applyOptions: () => undefined }),
         };
+      },
+      panes: () => {
+        const count = Math.max(0, ...chart.series.map((x) => x.pane)) + 1;
+        return Array.from({ length: count }, () => ({ setStretchFactor: () => undefined }));
       },
       timeScale: () => ({ fitContent: () => undefined }),
       subscribeCrosshairMove: () => undefined,

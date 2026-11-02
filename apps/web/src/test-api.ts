@@ -16,6 +16,7 @@ export const defaultPreferences = {
   compact: false,
   risk_profile: 'balanced',
   last_instrument: null,
+  indicators: [],
 } as const;
 
 /** What a new account's workspace returns, so signed-in screens can load. */

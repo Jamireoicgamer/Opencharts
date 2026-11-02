@@ -10,6 +10,7 @@ import { ErrorMessage } from '../components/Form';
 import { money } from '../format';
 import { useSubmit } from '../hooks';
 import { ChartArea } from '../market/ChartArea';
+import { IndicatorMenu } from '../market/IndicatorMenu';
 import { MarketProvider, useConnection, useFiredAlerts, useQuotes } from '../market/hooks';
 import { QuoteHeader } from '../market/QuoteHeader';
 import type { FiredAlert } from '../market/types';
@@ -235,17 +236,25 @@ function Stage({ onSearch, canConfigure }: { onSearch: () => void; canConfigure:
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="toolbar-button"
-          aria-label={prefs.chart_type === 'candle' ? 'Switch to line chart' : 'Switch to candles'}
-          title={prefs.chart_type === 'candle' ? 'Candles' : 'Line'}
-          onClick={() =>
-            void updatePrefs({ chart_type: prefs.chart_type === 'candle' ? 'line' : 'candle' })
-          }
-        >
-          <Icon name={prefs.chart_type === 'candle' ? 'candle' : 'line'} />
-        </button>
+        <div className="toolbar-actions">
+          <button
+            type="button"
+            className="toolbar-button"
+            aria-label={
+              prefs.chart_type === 'candle' ? 'Switch to line chart' : 'Switch to candles'
+            }
+            title={prefs.chart_type === 'candle' ? 'Candles' : 'Line'}
+            onClick={() =>
+              void updatePrefs({ chart_type: prefs.chart_type === 'candle' ? 'line' : 'candle' })
+            }
+          >
+            <Icon name={prefs.chart_type === 'candle' ? 'candle' : 'line'} />
+          </button>
+          <IndicatorMenu
+            indicators={prefs.indicators}
+            onChange={(indicators) => void updatePrefs({ indicators })}
+          />
+        </div>
       </section>
 
       <div className="chart-shell">
@@ -258,6 +267,7 @@ function Stage({ onSearch, canConfigure }: { onSearch: () => void; canConfigure:
             chartType={prefs.chart_type}
             showGrid={prefs.show_grid}
             showOhlc={prefs.show_ohlc}
+            indicators={prefs.indicators}
             canConfigure={canConfigure}
           />
         ) : (

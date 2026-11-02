@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Per-user workspace preferences, synced across devices."""
 
-from typing import Literal
+from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter
-from pydantic import BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -17,6 +17,41 @@ from openchart_api.tables import user_preferences
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
 
+# Indicators with a period the user chooses, and the default for each.
+PERIODIC = {"sma": 20, "ema": 20, "bollinger": 20, "rsi": 14}
+MAX_INDICATORS = 10
+
+
+class Indicator(BaseModel):
+    """One indicator shown on the chart."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["sma", "ema", "bollinger", "vwap", "volume", "rsi", "macd"]
+    period: Annotated[int, Field(ge=2, le=400)] | None = None
+
+    @model_validator(mode="after")
+    def _period_fits_kind(self) -> Self:
+        if self.kind in PERIODIC:
+            if self.period is None:
+                self.period = PERIODIC[self.kind]
+        elif self.period is not None:
+            raise ValueError(f"{self.kind} has no period")
+        return self
+
+
+def _distinct(indicators: list[Indicator]) -> list[Indicator]:
+    keys = [(i.kind, i.period) for i in indicators]
+    if len(keys) != len(set(keys)):
+        raise ValueError("the same indicator is listed twice")
+    return indicators
+
+
+Indicators = Annotated[
+    list[Indicator], Field(max_length=MAX_INDICATORS), AfterValidator(_distinct)
+]
+
+
 class Preferences(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -27,6 +62,7 @@ class Preferences(BaseModel):
     compact: bool = False
     risk_profile: Literal["conservative", "balanced", "aggressive"] = "balanced"
     last_instrument: InstrumentIdField | None = None
+    indicators: Indicators = []
 
 
 class PreferencesChange(BaseModel):
@@ -41,6 +77,7 @@ class PreferencesChange(BaseModel):
     compact: bool | None = None
     risk_profile: Literal["conservative", "balanced", "aggressive"] | None = None
     last_instrument: InstrumentIdField | None = None
+    indicators: Indicators | None = None
 
 
 async def load(conn: AsyncConnection) -> Preferences:
@@ -69,7 +106,7 @@ async def get_preferences(user: User, conn: Conn) -> Preferences:
 
 @router.put("")
 async def change_preferences(body: PreferencesChange, user: User, conn: Conn) -> Preferences:
-    merged = (await load(conn)).model_copy(update=body.model_dump(exclude_unset=True))
-    prefs = Preferences.model_validate(merged.model_dump())
+    current = (await load(conn)).model_dump()
+    prefs = Preferences.model_validate({**current, **body.model_dump(exclude_unset=True)})
     await save(conn, user.id, prefs)
     return prefs

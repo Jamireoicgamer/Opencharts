@@ -51,6 +51,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@opencharts/indicators':
+        specifier: workspace:*
+        version: link:../../packages/indicators
       '@opencharts/ui':
         specifier: workspace:*
         version: link:../../packages/ui

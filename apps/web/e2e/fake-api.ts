@@ -38,6 +38,7 @@ export function workspaceRoutes(): Record<string, Answer> {
     compact: false,
     risk_profile: 'balanced',
     last_instrument: null,
+    indicators: [],
   };
   let watchlist: string[] = [];
   const theses: Record<string, Record<string, unknown>[]> = {};

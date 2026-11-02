@@ -310,7 +310,8 @@ describe('prices in the panels', () => {
   it('shows a toast when an alert fires', async () => {
     signedInRoutes();
     renderWorkspace();
-    await waitFor(() => expect(FakeSocket.instances.length).toBeGreaterThan(0));
+    // The toasts listen once the workspace has loaded; wait for that.
+    await waitFor(() => expect(charts).toHaveLength(1));
     act(() => {
       FakeSocket.last.open();
       FakeSocket.last.receive({
@@ -418,5 +419,108 @@ describe('data sources', () => {
     const settings = within(await screen.findByRole('complementary', { name: 'Settings' }));
     expect(await settings.findByText(/owner of this server chooses/)).toBeInTheDocument();
     expect(settings.queryByRole('checkbox', { name: /Use / })).not.toBeInTheDocument();
+  });
+});
+
+describe('indicators', () => {
+  // 40 hourly bars of a steady climb, enough for MACD (26 + 9).
+  const longHistory = () =>
+    history({
+      candles: Array.from({ length: 40 }, (_, i) => ({
+        t: new Date(Date.UTC(2026, 9, 30, i)).toISOString(),
+        open: String(70000 + i * 10),
+        high: String(70020 + i * 10),
+        low: String(69990 + i * 10),
+        close: String(70010 + i * 10),
+        volume: '3',
+      })),
+    });
+
+  it('draws the saved indicators, oscillators in their own panes', async () => {
+    signedInRoutes({
+      'GET /preferences': [
+        200,
+        {
+          ...defaultPreferences,
+          last_instrument: BTC.id,
+          period: '1W',
+          indicators: [
+            { kind: 'ema', period: 20 },
+            { kind: 'bollinger', period: 20 },
+            { kind: 'volume', period: null },
+            { kind: 'rsi', period: 14 },
+            { kind: 'macd', period: null },
+          ],
+        },
+      ],
+      'GET /market/candles/CRYPTO%3ABTC-USD': [200, longHistory()],
+    });
+    renderWorkspace();
+    await waitFor(() => expect(charts).toHaveLength(1));
+    const chart = charts[0];
+    if (!chart) throw new Error('no chart');
+    const kinds = chart.series.map((s) => `${s.kind}@${s.pane}`);
+    expect(kinds).toEqual([
+      'Candlestick@0',
+      'Line@0', // EMA 20
+      'Line@0', // Bollinger upper, middle, lower
+      'Line@0',
+      'Line@0',
+      'Histogram@0', // volume, on its own scale
+      'Line@1', // RSI
+      'Histogram@2', // MACD histogram, line, signal
+      'Line@2',
+      'Line@2',
+    ]);
+    // EMA 20 starts at the 20th bar; RSI has its 70 and 30 guides.
+    expect(chart.series[1]?.data).toHaveLength(21);
+    expect(chart.series[6]?.priceLines).toHaveLength(2);
+    expect(screen.getByText(/^EMA 20 /)).toBeInTheDocument();
+    expect(screen.getByText(/^RSI 14 100\.00$/)).toBeInTheDocument(); // only rising closes
+
+    // A live quote moves the indicators' last values too.
+    act(() => {
+      FakeSocket.last.open();
+      FakeSocket.last.receive({
+        type: 'quote',
+        ...quote({ at: new Date(Date.UTC(2026, 9, 30, 39, 30)).toISOString(), price: '60000' }),
+      });
+    });
+    const rsiUpdate = chart.series[6]?.updates.at(-1) as { value: number } | undefined;
+    expect(rsiUpdate?.value).toBeLessThan(50);
+    expect(chart.series[5]?.updates).toHaveLength(0); // volume isn't in quotes
+  });
+
+  it('adds and removes indicators from the toolbar', async () => {
+    const api = signedInRoutes();
+    renderWorkspace();
+    await waitFor(() => expect(charts).toHaveLength(1));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Indicators' }));
+    const menu = within(screen.getByRole('group', { name: 'Indicators' }));
+    expect(menu.getByText('No indicators on the chart.')).toBeInTheDocument();
+    await user.clear(menu.getByLabelText('Period'));
+    await user.type(menu.getByLabelText('Period'), '50');
+    await user.click(menu.getByRole('button', { name: 'Add' }));
+    await waitFor(() =>
+      expect(api.calls.filter((c) => c.method === 'PUT').at(-1)?.body).toEqual({
+        indicators: [{ kind: 'ema', period: 50 }],
+      }),
+    );
+    // Rebuilt with the new line; the same one can't be added twice.
+    await waitFor(() =>
+      expect(charts.at(-1)?.series.map((s) => s.kind)).toEqual(['Candlestick', 'Line']),
+    );
+    expect(await menu.findByText('EMA 50 is already on.')).toBeInTheDocument();
+    expect(menu.getByRole('button', { name: 'Add' })).toBeDisabled();
+
+    await user.selectOptions(menu.getByLabelText('Indicator'), 'macd');
+    expect(menu.queryByLabelText('Period')).not.toBeInTheDocument();
+    await user.click(menu.getByRole('button', { name: 'Remove EMA 50' }));
+    await waitFor(() =>
+      expect(api.calls.filter((c) => c.method === 'PUT').at(-1)?.body).toEqual({ indicators: [] }),
+    );
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('group', { name: 'Indicators' })).not.toBeInTheDocument();
   });
 });

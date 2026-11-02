@@ -82,6 +82,14 @@ export const PERIODS = ['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const;
 export type Period = (typeof PERIODS)[number];
 export type RiskProfile = 'conservative' | 'balanced' | 'aggressive';
 
+export type IndicatorKind = 'sma' | 'ema' | 'bollinger' | 'vwap' | 'volume' | 'rsi' | 'macd';
+
+export interface Indicator {
+  kind: IndicatorKind;
+  /** The period for SMA, EMA, Bollinger and RSI; null for the others. */
+  period: number | null;
+}
+
 export interface Preferences {
   chart_type: 'candle' | 'line';
   period: Period;
@@ -90,6 +98,7 @@ export interface Preferences {
   compact: boolean;
   risk_profile: RiskProfile;
   last_instrument: string | null;
+  indicators: Indicator[];
 }
 
 export interface ImportResult {
