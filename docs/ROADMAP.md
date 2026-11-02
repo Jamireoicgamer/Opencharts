@@ -53,9 +53,10 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 - [ ] Intel Mac build (the bundled OpenSSL is older than the cryptography library needs)
 
 ## M4 — Pro charting
-- [ ] Lightweight Charts engine with custom overlay canvas
-- [ ] Deterministic indicators (SMA, EMA, VWAP, RSI, MACD, Bollinger, volume)
-- [ ] Drawing tools, multi-chart layouts, saved workspaces, event markers
+- [x] Lightweight Charts engine with an overlay for drawings (a series primitive, so no extra canvas)
+- [x] Deterministic indicators (SMA, EMA, VWAP, RSI, MACD, Bollinger, volume), cross-checked against a Python reference ([guide](guides/charts.md))
+- [x] Drawing tools: trend line, horizontal level, rectangle, Fibonacci retracement, note; saved per instrument and synced
+- [ ] Multi-chart layouts (1, 2, 2×2, 3×3), saved workspaces, compare mode, event markers
 
 ## M5 — AI chat
 - [ ] Ollama, LM Studio, Anthropic, OpenAI-compatible and Gemini adapters

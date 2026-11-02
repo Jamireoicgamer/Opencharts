@@ -109,8 +109,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       <h3 className="list-heading">Your data</h3>
       <p className="helper">
         Download everything in your workspace as JSON: watchlist, theses with every version,
-        research, holdings, alerts and preferences. Import the file into OpenChart anywhere else,
-        such as the desktop app or a server, to move your workspace there.
+        research, holdings, alerts, chart drawings and preferences. Import the file into OpenChart
+        anywhere else, such as the desktop app or a server, to move your workspace there.
       </p>
       <button
         type="button"
