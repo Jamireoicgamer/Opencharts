@@ -20,6 +20,9 @@ import {
 } from 'lightweight-charts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Indicator } from '../workspace/types';
+import { DrawingEditor } from './DrawingEditor';
+import { DrawingLayer } from './DrawingLayer';
+import { TimeAxis, type Drawing } from './drawings';
 import {
   indicatorLines,
   panesFor,
@@ -29,6 +32,7 @@ import {
   type PaneKind,
 } from './indicators';
 import type { Candle, History, Quote } from './types';
+import type { DrawingsApi } from './useDrawings';
 
 const INTERVAL_SECONDS = { '5m': 300, '1h': 3600, '1d': 86400 } as const;
 
@@ -130,6 +134,7 @@ export function PriceChart({
   showGrid,
   showOhlc,
   indicators = [],
+  drawings,
 }: {
   history: History;
   quote: Quote | undefined;
@@ -137,8 +142,13 @@ export function PriceChart({
   showGrid: boolean;
   showOhlc: boolean;
   indicators?: Indicator[];
+  /** The user's drawings for this instrument; without it, none are shown. */
+  drawings?: DrawingsApi;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const chartApi = useRef<IChartApi | null>(null);
+  const layer = useRef<DrawingLayer | null>(null);
+  const latestDrawings = useRef<Drawing[]>([]);
   const series = useRef<ISeriesApi<SeriesType> | null>(null);
   const extra = useRef<Map<string, ISeriesApi<SeriesType>>>(new Map());
   const last = useRef<Bar | null>(null);
@@ -148,6 +158,11 @@ export function PriceChart({
   const indicatorKey = JSON.stringify(indicators);
   const chosen = useMemo(() => JSON.parse(indicatorKey) as Indicator[], [indicatorKey]);
   const baseBars = useMemo(() => toBars(history.candles), [history]);
+
+  // A rebuilt chart starts with whatever drawings are current.
+  useEffect(() => {
+    latestDrawings.current = drawings?.drawings ?? [];
+  });
 
   // Create the chart and series, and load history.
   useEffect(() => {
@@ -251,6 +266,23 @@ export function PriceChart({
     const panes = api.panes();
     panes.forEach((pane, i) => pane.setStretchFactor(i === 0 ? 3 : 1));
 
+    // Drawings sit on the price, in time and price coordinates.
+    const fontFamily = cssVar('--font-sans', 'sans-serif');
+    const drawingLayer = new DrawingLayer(
+      (name) => cssVar(name, '#b4abff'),
+      fontFamily,
+      (price) =>
+        price.toLocaleString(undefined, {
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision,
+        }),
+    );
+    drawingLayer.axis = new TimeAxis(bars.map((b) => b.time));
+    s.attachPrimitive(drawingLayer);
+    drawingLayer.update({ shapes: latestDrawings.current });
+    layer.current = drawingLayer;
+    chartApi.current = api;
+
     api.timeScale().fitContent();
     const indexOf = new Map(bars.map((b, i) => [b.time as number, i]));
     api.subscribeCrosshairMove((param) => {
@@ -265,6 +297,8 @@ export function PriceChart({
       api.remove();
       series.current = null;
       extra.current = new Map();
+      chartApi.current = null;
+      layer.current = null;
     };
     // Rebuild when the data, the look or the indicators change.
   }, [history, chartType, showGrid, chosen, baseBars]);
@@ -276,6 +310,10 @@ export function PriceChart({
     if (!s || !bar || !quote || quote.instrument_id !== history.instrument_id) return;
     const next = advance(bar, quote, history.interval, weekly);
     if (!next) return;
+    if (next.time !== bar.time && layer.current) {
+      // A new bar: drawings measure time against the bars on the chart.
+      layer.current.axis = new TimeAxis([...baseBars.map((b) => b.t), next.time]);
+    }
     last.current = next;
     s.update(chartType === 'candle' ? next : { time: next.time, value: next.close });
     if (extra.current.size === 0) return;
@@ -335,6 +373,9 @@ export function PriceChart({
         </div>
       )}
       <div ref={container} className="chart-canvas" data-testid="price-chart" />
+      {drawings && (
+        <DrawingEditor container={container} chart={chartApi} layer={layer} store={drawings} />
+      )}
     </div>
   );
 }

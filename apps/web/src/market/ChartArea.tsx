@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { Link } from 'react-router';
 import type { Indicator } from '../workspace/types';
 import { useCandles, type Live } from './hooks';
+import { useDrawings } from './useDrawings';
 import { SOURCE_LABELS } from './types';
 
 // The chart library is loaded on first use, keeping the first page load small.
@@ -29,6 +30,7 @@ export function ChartArea({
   canConfigure: boolean;
 }) {
   const { state, retry } = useCandles(instrumentId, period);
+  const drawings = useDrawings(instrumentId);
 
   if (state.status === 'loading') {
     return (
@@ -90,6 +92,7 @@ export function ChartArea({
           showGrid={showGrid}
           showOhlc={showOhlc}
           indicators={indicators}
+          drawings={drawings}
         />
       </Suspense>
       <p className="chart-source">

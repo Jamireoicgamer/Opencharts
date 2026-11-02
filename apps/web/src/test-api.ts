@@ -39,7 +39,12 @@ export function mockApi(given: Record<string, Handler | [number, unknown?]>): Fa
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     fake.calls.push({ method, path, body });
     const route =
-      routes[`${method} ${path}`] ?? routes[`${method} ${url.pathname.replace(/^\/api/, '')}`];
+      routes[`${method} ${path}`] ??
+      routes[`${method} ${url.pathname.replace(/^\/api/, '')}`] ??
+      // Charts load their drawings; none unless a test says otherwise.
+      (method === 'GET' && /^\/instruments\/[^/]+\/drawings$/.test(path)
+        ? ([200, []] as [number, unknown])
+        : undefined);
     const [status, json] =
       typeof route === 'function' ? route(body) : (route ?? [404, { detail: 'Not found' }]);
     return new Response(json === undefined ? null : JSON.stringify(json), {

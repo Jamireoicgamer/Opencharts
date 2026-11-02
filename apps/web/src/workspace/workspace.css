@@ -1328,3 +1328,138 @@ kbd {
     display: none;
   }
 }
+
+/* Drawing tools, over the chart's top-right corner (left of the price scale). */
+.drawing-tools {
+  position: absolute;
+  top: 8px;
+  right: 76px;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+
+.chart-tool {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chart-tool:hover,
+.chart-tool[aria-pressed='true'],
+.chart-tool[aria-expanded='true'] {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.chart-tool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.drawing-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.drawing-hint.error {
+  color: var(--red);
+}
+
+.drawing-selected {
+  position: absolute;
+  top: 44px;
+  right: 76px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 96px);
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.drawing-selected input {
+  width: 140px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch[aria-checked='true'] {
+  border-color: var(--text);
+}
+
+.swatch[data-color='accent'] {
+  background: var(--accent);
+}
+.swatch[data-color='amber'] {
+  background: var(--amber);
+}
+.swatch[data-color='blue'] {
+  background: var(--blue);
+}
+.swatch[data-color='pink'] {
+  background: var(--pink);
+}
+.swatch[data-color='green'] {
+  background: var(--green);
+}
+.swatch[data-color='red'] {
+  background: var(--red);
+}
+.swatch[data-color='muted'] {
+  background: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .drawing-tools,
+  .drawing-selected {
+    right: 62px;
+  }
+
+  .drawing-selected {
+    flex-wrap: wrap;
+  }
+}

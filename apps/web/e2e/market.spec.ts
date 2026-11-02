@@ -22,10 +22,13 @@ function candles(count: number) {
 
 const violations: string[] = [];
 let prefs: Record<string, unknown> = {};
+// Kept across a reload, like the server's data.
+let routes = workspaceRoutes();
 
 async function openOnBitcoin(page: Page, fresh = true) {
   violations.length = 0;
   if (fresh) {
+    routes = workspaceRoutes();
     prefs = {
       chart_type: 'candle',
       period: '1W',
@@ -41,7 +44,6 @@ async function openOnBitcoin(page: Page, fresh = true) {
     if (m.type() === 'error' && m.text().includes('Content Security Policy'))
       violations.push(m.text());
   });
-  const routes = workspaceRoutes();
   await fakeApi(page, {
     ...routes,
     'GET /preferences': () => ({ json: prefs }),
@@ -131,6 +133,56 @@ test('indicators are added from the toolbar and survive a reload', async ({ page
   await openOnBitcoin(page, false);
   await expect(page.getByText(/^RSI 14 \d/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Indicators' })).toContainText('2');
+  expect(violations).toEqual([]);
+});
+
+test('drawings are placed on the chart, saved, and come back after a reload', async ({ page }) => {
+  await openOnBitcoin(page);
+  await expect(page.getByText('$70,512.25')).toBeVisible();
+  const chart = page.getByTestId('price-chart');
+  const box = await chart.boundingBox();
+  if (!box) throw new Error('no chart');
+
+  await page.getByRole('button', { name: 'Draw' }).click();
+  await page.getByRole('button', { name: 'Trend line' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Trend line:' })).toBeVisible();
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && r.url().includes('/drawings'),
+  );
+  await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.6);
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.45);
+  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.3);
+  const body = (await saved).request().postDataJSON() as { kind: string; points: unknown[] };
+  expect(body.kind).toBe('trend');
+  expect(body.points).toHaveLength(2);
+  await expect(page.getByRole('group', { name: 'Selected trend line' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Horizontal level' }).click();
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.7);
+  const label = page.getByLabel('Label');
+  await label.fill('support');
+  await label.press('Enter');
+  await page.keyboard.press('Escape');
+  await page.screenshot({ path: 'test-results/drawings.png' });
+
+  const reloaded = page.waitForResponse(
+    (r) => r.request().method() === 'GET' && r.url().includes('/drawings'),
+  );
+  await page.reload();
+  await openOnBitcoin(page, false);
+  expect(((await (await reloaded).json()) as unknown[]).length).toBe(2);
+  await expect(page.getByText('$70,512.25')).toBeVisible();
+  // Click on the saved level to select it again: it came back from the server.
+  // The chart loads lazily; click until it's there to be clicked.
+  await expect(async () => {
+    await page.mouse.click(box.x + box.width * 0.2, box.y + box.height * 0.7);
+    await expect(page.getByRole('group', { name: 'Selected horizontal level' })).toBeVisible({
+      timeout: 500,
+    });
+  }).toPass({ timeout: 5000 });
+  await expect(page.getByLabel('Label')).toHaveValue('support');
+  await page.keyboard.press('Delete');
+  await expect(page.getByRole('group', { name: 'Selected horizontal level' })).toBeHidden();
   expect(violations).toEqual([]);
 });
 

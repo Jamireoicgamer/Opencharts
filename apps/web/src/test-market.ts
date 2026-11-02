@@ -58,6 +58,8 @@ export interface FakeChart {
   options: Record<string, unknown>;
   series: FakeSeries[];
   removed: boolean;
+  primitives: unknown[];
+  applied: Record<string, unknown>[];
 }
 
 export const charts: FakeChart[] = [];
@@ -70,9 +72,15 @@ export const chartModule = {
   LineSeries: { type: 'Line' },
   HistogramSeries: { type: 'Histogram' },
   createChart: vi.fn((_el: HTMLElement, options: Record<string, unknown>) => {
-    const chart: FakeChart = { options, series: [], removed: false };
+    const chart: FakeChart = { options, series: [], removed: false, primitives: [], applied: [] };
     charts.push(chart);
-    return {
+    // Simple linear scales: x = 10 px per bar, y = 1000 - price / 100.
+    const timeScale = {
+      fitContent: () => undefined,
+      logicalToCoordinate: (logical: number) => logical * 10,
+      coordinateToLogical: (x: number) => x / 10,
+    };
+    const fakeApi = {
       addSeries: (definition: { type: string }, seriesOptions = {}, pane = 0) => {
         const entry: FakeSeries = {
           kind: definition.type,
@@ -83,24 +91,42 @@ export const chartModule = {
           priceLines: [],
         };
         chart.series.push(entry);
-        return {
+        const seriesApi = {
           setData: (data: unknown[]) => {
             entry.data = data;
           },
           update: (bar: unknown) => entry.updates.push(bar),
           createPriceLine: (line: unknown) => entry.priceLines.push(line),
+          attachPrimitive: (primitive: { attached?: (p: unknown) => void }) => {
+            chart.primitives.push(primitive);
+            primitive.attached?.({
+              chart: fakeApi,
+              series: seriesApi,
+              requestUpdate: () => undefined,
+            });
+          },
+          priceToCoordinate: (price: number) => 1000 - price / 100,
+          coordinateToPrice: (y: number) => (1000 - y) * 100,
           priceScale: () => ({ applyOptions: () => undefined }),
         };
+        return seriesApi;
+      },
+      applyOptions: (options: Record<string, unknown>) => {
+        chart.applied.push(options);
       },
       panes: () => {
         const count = Math.max(0, ...chart.series.map((x) => x.pane)) + 1;
-        return Array.from({ length: count }, () => ({ setStretchFactor: () => undefined }));
+        return Array.from({ length: count }, () => ({
+          setStretchFactor: () => undefined,
+          getHeight: () => 1000,
+        }));
       },
-      timeScale: () => ({ fitContent: () => undefined }),
+      timeScale: () => timeScale,
       subscribeCrosshairMove: () => undefined,
       remove: () => {
         chart.removed = true;
       },
     };
+    return fakeApi;
   }),
 };
