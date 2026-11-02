@@ -100,9 +100,15 @@ jobs:
         run: |
           cargo build --locked --release -p openchart-supervisor --manifest-path apps/desktop/Cargo.toml
           data="$RUNNER_TEMP/openchart-data"
+          postgres=apps/desktop/build/postgres
+          if [ "$RUNNER_OS" = Windows ]; then
+            # The installed app gets its folder as a verbatim \\?\C:\... path,
+            # which initdb can't use as is; test with one, as the app does.
+            postgres="\\\\?\\$(cygpath -w "$PWD/$postgres")"
+          fi
           uv run python apps/desktop/scripts/smoke.py -- \
             "apps/desktop/target/release/openchart-stack$EXE" \
-            --postgres apps/desktop/build/postgres \
+            --postgres "$postgres" \
             --api "apps/desktop/build/api/openchart-api$EXE" \
             --web apps/desktop/build/web \
             --data "$data" \

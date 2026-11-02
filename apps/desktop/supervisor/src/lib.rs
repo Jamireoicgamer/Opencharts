@@ -106,10 +106,10 @@ impl Stack {
     pub fn start(layout: &Layout, store: &dyn SecretStore) -> Result<Stack> {
         // Helpers run in the data folder, so relative paths would break.
         let layout = &Layout {
-            postgres: std::path::absolute(&layout.postgres)?,
-            api: std::path::absolute(&layout.api)?,
-            web: std::path::absolute(&layout.web)?,
-            data: std::path::absolute(&layout.data)?,
+            postgres: plain_path(&std::path::absolute(&layout.postgres)?),
+            api: plain_path(&std::path::absolute(&layout.api)?),
+            web: plain_path(&std::path::absolute(&layout.web)?),
+            data: plain_path(&std::path::absolute(&layout.data)?),
         };
         let logs = layout.logs();
         fs::create_dir_all(&logs)?;
@@ -167,6 +167,17 @@ impl Stack {
             let _ = self.api.wait();
         }
         stop_postgres(&self.layout);
+    }
+}
+
+/// Turns Windows "verbatim" paths (`\\?\C:\...`), which the installed app gets
+/// for its own folder, as plain `C:\...` paths. initdb runs postgres through
+/// cmd.exe, which can't run a verbatim path. Network paths keep the prefix.
+pub fn plain_path(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) if !rest.starts_with("UNC\\") => PathBuf::from(rest),
+        _ => path.to_path_buf(),
     }
 }
 
@@ -486,5 +497,36 @@ impl NoWindow for Command {
     #[cfg(not(windows))]
     fn no_window(&mut self) -> &mut Self {
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verbatim_windows_paths_become_plain() {
+        let cases = [
+            (
+                r"\\?\C:\Users\Someone\AppData\Local\OpenChart\postgres",
+                r"C:\Users\Someone\AppData\Local\OpenChart\postgres",
+            ),
+            (r"C:\Program Files\OpenChart", r"C:\Program Files\OpenChart"),
+            (
+                "/Applications/OpenChart.app/Contents/Resources",
+                "/Applications/OpenChart.app/Contents/Resources",
+            ),
+            (
+                r"\\?\UNC\server\share\OpenChart",
+                r"\\?\UNC\server\share\OpenChart",
+            ),
+        ];
+        for (given, expected) in cases {
+            assert_eq!(
+                plain_path(Path::new(given)),
+                PathBuf::from(expected),
+                "{given}"
+            );
+        }
     }
 }
