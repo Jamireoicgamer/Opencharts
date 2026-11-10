@@ -18,6 +18,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 MASTER_KEY_BYTES = 32
 MIN_SETUP_TOKEN_LENGTH = 16
+MIN_DESKTOP_TOKEN_LENGTH = 32
 _DOCKER_SECRETS = "/run/secrets"
 
 
@@ -54,6 +55,10 @@ class Settings(BaseSettings):
     # One-time token required to create the owner account. Generated and
     # logged at startup when unset and no users exist.
     setup_token: SecretStr | None = None
+    # Set only by the desktop app, fresh on every launch: presenting it to
+    # POST /api/auth/desktop signs in as the owner, without a password.
+    # Servers never set it, and the endpoint does not exist without it.
+    desktop_token: SecretStr | None = None
     # Serve interactive API docs at /api/docs. Off by default: they reveal the
     # whole API surface and load scripts from a CDN that the CSP blocks.
     api_docs: bool = False
@@ -86,6 +91,15 @@ class Settings(BaseSettings):
             raise ValueError(f"master_key must decode to {MASTER_KEY_BYTES} bytes")
         return value
 
+    @field_validator("desktop_token")
+    @classmethod
+    def _check_desktop_token(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < MIN_DESKTOP_TOKEN_LENGTH:
+            raise ValueError(
+                f"desktop_token must be at least {MIN_DESKTOP_TOKEN_LENGTH} characters"
+            )
+        return value
+
     @field_validator("setup_token")
     @classmethod
     def _check_setup_token(cls, value: SecretStr | None) -> SecretStr | None:
@@ -106,6 +120,10 @@ class Settings(BaseSettings):
     @cached_property
     def master_key_bytes(self) -> bytes:
         return base64.b64decode(self.master_key.get_secret_value())
+
+    @property
+    def desktop(self) -> bool:
+        return self.desktop_token is not None
 
     @property
     def cookie_secure(self) -> bool:

@@ -17,11 +17,14 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_needs_setup_until_owner_exists(client: httpx2.AsyncClient) -> None:
-    assert (await client.get("/api/setup/status")).json() == {"needs_setup": True}
+    assert (await client.get("/api/setup/status")).json() == {"needs_setup": True, "desktop": False}
     response = await client.post("/api/setup", json={**OWNER, "setup_token": SETUP_TOKEN})
     assert response.status_code == 201
     assert response.json()["role"] == "owner"
-    assert (await client.get("/api/setup/status")).json() == {"needs_setup": False}
+    assert (await client.get("/api/setup/status")).json() == {
+        "needs_setup": False,
+        "desktop": False,
+    }
     me = await client.get("/api/auth/me")
     assert me.json()["email"] == OWNER["email"]
 
@@ -31,7 +34,7 @@ async def test_wrong_setup_token_is_rejected_and_audited(
 ) -> None:
     response = await client.post("/api/setup", json={**OWNER, "setup_token": "guess"})
     assert response.status_code == 403
-    assert (await client.get("/api/setup/status")).json() == {"needs_setup": True}
+    assert (await client.get("/api/setup/status")).json() == {"needs_setup": True, "desktop": False}
     async with admin_engine.connect() as conn:
         actions = (await conn.scalars(text("SELECT action FROM audit_log"))).all()
     assert actions == ["setup.token_rejected"]

@@ -18,6 +18,8 @@ router = APIRouter(prefix="/setup", tags=["setup"])
 
 class SetupStatus(BaseModel):
     needs_setup: bool
+    # The desktop app: it signs in with its launch token, not a password.
+    desktop: bool = False
 
 
 class SetupRequest(NewAccount):
@@ -25,8 +27,11 @@ class SetupRequest(NewAccount):
 
 
 @router.get("/status")
-async def setup_status(conn: Conn) -> SetupStatus:
-    return SetupStatus(needs_setup=bool(await conn.scalar(text("SELECT auth_needs_setup()"))))
+async def setup_status(conn: Conn, settings: SettingsDep) -> SetupStatus:
+    return SetupStatus(
+        needs_setup=bool(await conn.scalar(text("SELECT auth_needs_setup()"))),
+        desktop=settings.desktop,
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, responses={403: {}, 409: {}, 429: {}})

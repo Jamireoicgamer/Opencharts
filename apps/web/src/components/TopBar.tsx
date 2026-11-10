@@ -12,7 +12,7 @@ const statusLabel: Record<ApiHealth['state'], string> = {
 
 export function TopBar() {
   const health = useApiHealth();
-  const { session, signOut } = useSession();
+  const { session, desktop, signOut } = useSession();
 
   return (
     <header className="topbar">
@@ -34,9 +34,11 @@ export function TopBar() {
             <NavLink to="/account" className="nav-link">
               {session.user.display_name}
             </NavLink>
-            <button type="button" className="button ghost" onClick={() => void signOut()}>
-              Sign out
-            </button>
+            {!desktop && (
+              <button type="button" className="button ghost" onClick={() => void signOut()}>
+                Sign out
+              </button>
+            )}
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Sign in and out, invite-based registration, and session management."""
 
+import hmac
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -9,7 +10,15 @@ from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from openchart_api import audit
-from openchart_api.auth import SessionUser, SettingsDep, User, clear_session_cookie, sign_in
+from openchart_api.auth import (
+    SessionUser,
+    SettingsDep,
+    User,
+    clear_session_cookie,
+    mark_reauthenticated,
+    session_cookie,
+    sign_in,
+)
 from openchart_api.db import Conn, set_rls_context
 from openchart_api.routes.mfa_login import MfaRequired, begin_second_factor
 from openchart_api.routes.schemas import (
@@ -40,6 +49,16 @@ class RegisterRequest(NewAccount):
 
 class RevokedCount(BaseModel):
     revoked: int
+
+
+class DesktopRequest(BaseModel):
+    token: Token
+
+
+# The desktop owner's placeholder address. ``.localhost`` is reserved, so it
+# can never be someone's real mailbox.
+DESKTOP_EMAIL = "owner@openchart.localhost"
+DESKTOP_NAME = "Me"
 
 
 @router.post("/login", responses={401: {}, 429: {}})
@@ -88,6 +107,59 @@ async def login(
         metadata={"methods": ["password"]},
     )
     return await Me.signed_in(conn, row.id)
+
+
+@router.post("/desktop", responses={403: {}, 404: {}, 429: {}})
+async def desktop_sign_in(
+    body: DesktopRequest, request: Request, response: Response, conn: Conn, settings: SettingsDep
+) -> Me:
+    """The desktop app signs in as its owner with the token its shell
+    generated at launch (no password, no second factor: only the app window
+    has the token). With a session already, this confirms "it's you" for
+    sensitive changes instead. Servers have no token, so this is 404 there.
+    """
+    if settings.desktop_token is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not Found")
+    limiter = request.app.state.failure_limiter
+    ip = audit.client_ip(request)
+    if wait := limiter.retry_after(ip, "desktop"):
+        raise too_many_attempts(wait)
+    expected = settings.desktop_token.get_secret_value()
+    if not hmac.compare_digest(body.token.encode(), expected.encode()):
+        limiter.record_failure(ip, "desktop")
+        await audit.record_detached(request.app.state.engine, request, "auth.desktop_rejected")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This sign-in link is not valid")
+
+    # Already signed in as the owner: refresh "recently confirmed it's you".
+    if cookie := request.cookies.get(session_cookie(settings)):
+        current = (
+            await conn.execute(
+                text("SELECT * FROM auth_session_lookup(:h)"), {"h": token_hash(cookie)}
+            )
+        ).one_or_none()
+        if current is not None and current.role == "owner":
+            await set_rls_context(conn, current.user_id, current.role)
+            await mark_reauthenticated(conn, current.session_id)
+            await audit.record(conn, request, "auth.desktop_confirmed", user_id=current.user_id)
+            return await Me.signed_in(conn, current.user_id)
+
+    action = "auth.desktop"
+    owner = (await conn.execute(text("SELECT * FROM auth_desktop_owner()"))).one_or_none()
+    if owner is not None:
+        user_id = owner.id
+    else:
+        # First launch: create the owner, with no password until they add one.
+        user_id = await conn.scalar(
+            text("SELECT auth_bootstrap_owner(:email, :name, NULL)"),
+            {"email": DESKTOP_EMAIL, "name": DESKTOP_NAME},
+        )
+        if user_id is None:
+            # Accounts exist but none is an active owner (it was disabled).
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "The owner account is disabled")
+        action = "auth.desktop_owner_created"
+
+    await sign_in(conn, request, response, settings, user_id=user_id, role="owner", action=action)
+    return await Me.signed_in(conn, user_id)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

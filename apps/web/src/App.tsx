@@ -34,7 +34,7 @@ function Public({ page, children }: { page: 'setup' | 'login' | 'register'; chil
 }
 
 function SignedIn() {
-  const { session } = useSession();
+  const { session, desktop } = useSession();
   const location = useLocation();
   if (session.status === 'loading') return <Splash message="Loading…" />;
   if (session.status === 'error') return <Splash message={session.message} />;
@@ -46,7 +46,7 @@ function SignedIn() {
     return <Navigate to="/account/security" replace />;
 
   return (
-    <ReauthProvider>
+    <ReauthProvider desktop={desktop}>
       <div className="shell">
         <TopBar />
         <Routes>

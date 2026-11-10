@@ -1,0 +1,83 @@
+name: Create update key
+
+# Makes the key that signs desktop app updates. Run it once, by hand
+# (Actions → Create update key → Run workflow), after adding the
+# TAURI_SIGNING_PRIVATE_KEY_PASSWORD secret. See docs/guides/desktop.md.
+#
+# This repository is public, so anyone signed in to GitHub can download a
+# run's artifacts. The private key is therefore only ever uploaded
+# encrypted with that password, which never leaves the repository's
+# secrets, and the artifact is deleted after a day. Nothing secret is
+# printed to the log.
+
+on:
+  workflow_dispatch:
+    inputs:
+      replace:
+        description: >-
+          Replace the existing key. Apps installed with the old key will
+          stop updating and must be reinstalled by hand.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  key:
+    name: Create update key
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check the settings
+        env:
+          PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          EXISTING: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          REPLACE: ${{ inputs.replace }}
+        run: |
+          if [ "${#PASSWORD}" -lt 16 ]; then
+            echo "::error::First add a repository secret named TAURI_SIGNING_PRIVATE_KEY_PASSWORD, at least 16 characters long (Settings → Secrets and variables → Actions → New repository secret). Then run this again."
+            exit 1
+          fi
+          if [ -n "$EXISTING" ] && [ "$REPLACE" != true ]; then
+            echo "::error::An update key is already set up (the TAURI_UPDATER_PUBKEY variable). Replacing it stops installed apps from updating, so tick 'Replace the existing key' only if you mean to."
+            exit 1
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Generate the key
+        env:
+          PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          out="$RUNNER_TEMP/update-key"
+          mkdir -p "$out"
+          # The same Tauri CLI version the app is built with.
+          npx --yes @tauri-apps/cli@2.12.3 signer generate --ci \
+            --password="$PASSWORD" --write-keys "$out/update.key" > /dev/null
+          # Prove the key is encrypted before it goes anywhere.
+          head -n 1 <(base64 -d "$out/update.key") | grep -q 'encrypted secret key'
+          mv "$out/update.key" "$out/TAURI_SIGNING_PRIVATE_KEY.txt"
+          mv "$out/update.key.pub" "$out/TAURI_UPDATER_PUBKEY.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: update-key
+          path: ${{ runner.temp }}/update-key/
+          retention-days: 1
+          if-no-files-found: error
+      - name: Next steps
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Update key created
+
+          1. Download **update-key** below and unzip it.
+          2. In **Settings → Secrets and variables → Actions**:
+             - **Secrets** tab → New repository secret named `TAURI_SIGNING_PRIVATE_KEY`.
+               Paste the whole contents of `TAURI_SIGNING_PRIVATE_KEY.txt`.
+             - **Variables** tab → New repository variable named `TAURI_UPDATER_PUBKEY`.
+               Paste the whole contents of `TAURI_UPDATER_PUBKEY.txt`.
+          3. Delete the unzipped files, then delete this run (the **…** menu on the run) so the
+             encrypted key isn't kept here. It expires after a day either way.
+
+          Keep the password secret where it is: every update is signed with the key and password together.
+          EOF

@@ -46,7 +46,8 @@ The full plan, including architecture, decisions and acceptance criteria for eac
 ## M3½ — Desktop app
 - [x] Windows and macOS app (Tauri) that runs everything on one computer, with no server or Docker ([guide](guides/desktop.md))
 - [x] Bundled PostgreSQL 16 and frozen API on 127.0.0.1, keys in the system keychain, crash recovery, smoke-tested on each platform in CI
-- [x] Signed automatic updates, ready to switch on with the project's update key
+- [x] Signed automatic updates; GitHub makes the password-encrypted update key, and a `desktop-vX.Y.Z` tag publishes a release every install picks up
+- [x] Opens straight to the workspace with no sign-in, using a fresh per-launch key only the window gets (servers still sign in)
 - [x] The same workspace export/import moves data between the desktop app and a server
 - [ ] Code-signed and notarised builds (needs Apple and Windows certificates)
 - [ ] Hands-on install check on a fresh Windows and macOS machine

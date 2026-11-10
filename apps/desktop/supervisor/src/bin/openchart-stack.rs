@@ -60,7 +60,7 @@ fn run() -> Result<(), String> {
             "origin": stack.origin(),
             "port": stack.port,
             "start_url": stack.start_url(),
-            "setup_token": stack.setup_token,
+            "desktop_token": stack.desktop_token,
         })
     );
     let mut sink = Vec::new();

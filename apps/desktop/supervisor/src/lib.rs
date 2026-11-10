@@ -97,8 +97,9 @@ pub struct Stack {
     api_stdin: Option<ChildStdin>,
     /// The port the API (and web app) listens on, on 127.0.0.1.
     pub port: u16,
-    /// Set when no owner account exists yet: the first-run setup token.
-    pub setup_token: Option<String>,
+    /// Signs the window in as the owner, without a password. Random on
+    /// every launch, never stored, and given only to the API and the window.
+    pub desktop_token: String,
 }
 
 impl Stack {
@@ -150,12 +151,10 @@ impl Stack {
         origin(self.port)
     }
 
-    /// Where the window should go first: setup on a fresh install.
+    /// Where the window goes first. The token rides in the fragment, which
+    /// browsers never send to a server, so it can't reach a log.
     pub fn start_url(&self) -> String {
-        match &self.setup_token {
-            Some(token) => format!("{}/setup#token={token}", self.origin()),
-            None => format!("{}/", self.origin()),
-        }
+        start_url(self.port, &self.desktop_token)
     }
 
     /// Stop the API, then Postgres.
@@ -183,6 +182,10 @@ pub fn plain_path(path: &Path) -> PathBuf {
 
 fn origin(port: u16) -> String {
     format!("http://localhost:{port}")
+}
+
+fn start_url(port: u16, desktop_token: &str) -> String {
+    format!("{}/#desktop={desktop_token}", origin(port))
 }
 
 fn init_database(layout: &Layout, secrets: &Secrets) -> Result<()> {
@@ -345,7 +348,8 @@ fn start_api(layout: &Layout, secrets: &Secrets, pg_port: u16) -> Result<Stack> 
     }
 
     let port = free_port()?;
-    let setup_token = secrets::random_hex(24)?;
+    // 256 bits, fresh for this launch.
+    let desktop_token = secrets::random_hex(32)?;
     let output = append_log(&log)?;
     let mut api = api_command(layout)
         .args([
@@ -363,7 +367,7 @@ fn start_api(layout: &Layout, secrets: &Secrets, pg_port: u16) -> Result<Stack> 
         .env("OPENCHART_MASTER_KEY", &secrets.master_key)
         .env("OPENCHART_PUBLIC_ORIGIN", origin(port))
         .env("OPENCHART_STATIC_DIR", &layout.web)
-        .env("OPENCHART_SETUP_TOKEN", &setup_token)
+        .env("OPENCHART_DESKTOP_TOKEN", &desktop_token)
         .stdin(Stdio::piped())
         .stdout(output.try_clone()?)
         .stderr(output)
@@ -391,19 +395,12 @@ fn start_api(layout: &Layout, secrets: &Secrets, pg_port: u16) -> Result<Stack> 
         }
         thread::sleep(Duration::from_millis(150));
     }
-    let needs_setup = match get(port, "/api/setup/status") {
-        Ok((200, body)) => serde_json::from_str::<serde_json::Value>(&body)
-            .ok()
-            .and_then(|v| v.get("needs_setup").and_then(|n| n.as_bool()))
-            .unwrap_or(false),
-        _ => false,
-    };
     Ok(Stack {
         layout: layout.clone(),
         api,
         api_stdin,
         port,
-        setup_token: needs_setup.then_some(setup_token),
+        desktop_token,
     })
 }
 
@@ -503,6 +500,14 @@ impl NoWindow for Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_window_signs_in_through_the_fragment() {
+        assert_eq!(
+            start_url(4100, "ab12"),
+            "http://localhost:4100/#desktop=ab12"
+        );
+    }
 
     #[test]
     fn verbatim_windows_paths_become_plain() {

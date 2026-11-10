@@ -247,10 +247,7 @@ mod tests {
 
     #[test]
     fn only_the_local_app_and_starting_page_load_in_the_window() {
-        assert!(is_local_app(
-            &url("http://localhost:4100/setup#token=x"),
-            4100
-        ));
+        assert!(is_local_app(&url("http://localhost:4100/#desktop=x"), 4100));
         assert!(is_bundled(&url("tauri://localhost/index.html#error=x")));
         assert!(is_bundled(&url("http://tauri.localhost/index.html")));
         for other in [

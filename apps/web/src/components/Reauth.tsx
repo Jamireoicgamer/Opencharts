@@ -4,6 +4,7 @@
 // retries the change.
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { api, ApiError, REAUTH_REQUIRED } from '../api';
+import { desktopSignIn, desktopToken } from '../desktop';
 import { Cancelled, useSubmit } from '../hooks';
 import { passkeysSupported, signWithPasskey } from '../webauthn';
 import { ErrorMessage, Field, formValues } from './Form';
@@ -18,18 +19,38 @@ interface Pending {
   reject: (error: Error) => void;
 }
 
-export function ReauthProvider({ children }: { children: ReactNode }) {
+export function ReauthProvider({
+  children,
+  desktop = false,
+}: {
+  children: ReactNode;
+  /** The desktop app, which confirms with its launch token instead. */
+  desktop?: boolean;
+}) {
   const [pending, setPending] = useState<Pending | null>(null);
 
-  const withReauth = useCallback<WithReauth>(async (action) => {
-    try {
-      return await action();
-    } catch (error) {
-      if (!(error instanceof ApiError && error.message === REAUTH_REQUIRED)) throw error;
-      await new Promise<void>((resolve, reject) => setPending({ resolve, reject }));
-      return action();
-    }
-  }, []);
+  const withReauth = useCallback<WithReauth>(
+    async (action) => {
+      try {
+        return await action();
+      } catch (error) {
+        if (!(error instanceof ApiError && error.message === REAUTH_REQUIRED)) throw error;
+        // The desktop app proves it's you with its launch token: no question.
+        const token = desktop ? desktopToken() : null;
+        if (
+          token &&
+          (await desktopSignIn(token).then(
+            () => true,
+            () => false,
+          ))
+        )
+          return action();
+        await new Promise<void>((resolve, reject) => setPending({ resolve, reject }));
+        return action();
+      }
+    },
+    [desktop],
+  );
 
   return (
     <ReauthContext.Provider value={withReauth}>

@@ -5,10 +5,11 @@
 
 Starts the stack on a fresh data folder, then, through the API the window
 uses:
-- sets up the owner with the start URL's token,
+- signs in with the start URL's desktop token (no password), after checking
+  that a wrong token is refused,
 - adds BTC to the watchlist and waits for a live Coinbase price,
-- exports the workspace, stops, starts again, signs in, and checks that the
-  watchlist survived.
+- exports the workspace, stops, starts again with a new token, signs in, and
+  checks that the watchlist survived and that "confirm it's you" works.
 """
 
 import json
@@ -20,11 +21,6 @@ from urllib.parse import urlsplit
 
 import httpx2
 
-OWNER = {
-    "display_name": "Desktop smoke test",
-    "email": "owner@example.com",
-    "password": "correct horse battery staple",
-}
 BTC = "CRYPTO:BTC-USD"
 
 
@@ -69,15 +65,21 @@ def main() -> None:
     step(f"up in {time.monotonic() - started:.1f} s at {stack.info['origin']}")
     http = stack.client
     check(urlsplit(stack.info["origin"]).hostname == "localhost", "served on localhost")
-    token = stack.info["setup_token"]
-    check(bool(token) and stack.info["start_url"].endswith(f"/setup#token={token}"), "setup URL")
+    token = stack.info["desktop_token"]
+    check(len(token) == 64, "a 256-bit desktop token")
+    check(stack.info["start_url"] == f"{stack.info['origin']}/#desktop={token}", "start URL")
 
-    page = http.get("/setup")
+    page = http.get("/")
     check(page.status_code == 200 and "<div id=" in page.text, "web app is served")
     check("default-src 'self'" in page.headers["content-security-policy"], "CSP is sent")
+    check(http.get("/api/setup/status").json()["desktop"] is True, "desktop mode is on")
 
-    owner = http.post("/api/setup", json={**OWNER, "setup_token": token})
-    check(owner.status_code == 201, f"owner setup: {owner.status_code} {owner.text}")
+    wrong = http.post("/api/auth/desktop", json={"token": "0" * 64})
+    check(wrong.status_code == 403, f"a wrong token is refused: {wrong.status_code}")
+    check(http.get("/api/auth/me").status_code == 401, "still signed out")
+
+    owner = http.post("/api/auth/desktop", json={"token": token})
+    check(owner.status_code == 200, f"desktop sign-in: {owner.status_code} {owner.text}")
     check(http.get("/api/auth/me").json()["role"] == "owner", "signed in as owner")
 
     check(http.post("/api/watchlist", json={"instrument_id": BTC}).status_code == 201, "watch BTC")
@@ -106,11 +108,18 @@ def main() -> None:
     step("second start")
     stack = Running(command)
     http = stack.client
-    check(stack.info["setup_token"] is None, "no setup on the second start")
-    login = http.post(
-        "/api/auth/login", json={"email": OWNER["email"], "password": OWNER["password"]}
-    )
+    check(stack.info["desktop_token"] != token, "a new token each launch")
+    old = http.post("/api/auth/desktop", json={"token": token})
+    check(old.status_code == 403, f"last launch's token is refused: {old.status_code}")
+    login = http.post("/api/auth/desktop", json={"token": stack.info["desktop_token"]})
     check(login.status_code == 200, f"sign in: {login.status_code} {login.text}")
+    check(login.json()["id"] == owner.json()["id"], "the same owner")
+    confirm = http.post("/api/auth/desktop", json={"token": stack.info["desktop_token"]})
+    check(confirm.status_code == 200, "confirming it's you needs no password")
+    password = http.post(
+        "/api/account/security/password", json={"new_password": "a password added later"}
+    )
+    check(password.status_code == 204, f"adding a password: {password.status_code}")
     watchlist = [item["id"] for item in http.get("/api/watchlist").json()]
     check(watchlist == [BTC], f"watchlist survived a restart: {watchlist}")
     stack.stop()
