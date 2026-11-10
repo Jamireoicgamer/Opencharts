@@ -120,6 +120,7 @@ jobs:
         with:
           name: smoke-logs-${{ matrix.platform }}
           path: ${{ runner.temp }}/openchart-data/logs/
+          retention-days: 7
 
       - name: Build the installers
         env:
@@ -188,6 +189,10 @@ jobs:
           name: openchart-${{ matrix.platform }}
           path: ${{ runner.temp }}/installers/${{ matrix.platform }}/
           if-no-files-found: error
+          # About 150 MB per platform: keep pull-request builds briefly so the
+          # repository's artifact storage doesn't fill up. Releases keep
+          # tagged versions for good.
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
 
   release:
     name: Release
