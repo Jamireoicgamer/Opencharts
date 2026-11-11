@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -1056,7 +1056,7 @@ requires-dist = [
     { name = "pyotp", specifier = ">=2.9" },
     { name = "segno", specifier = ">=1.6" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.30" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
     { name = "webauthn", specifier = ">=2.5" },
     { name = "websockets", specifier = ">=15" },
 ]
