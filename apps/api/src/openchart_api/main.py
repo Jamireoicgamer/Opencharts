@@ -62,7 +62,8 @@ async def _setup_token(app: FastAPI, settings: Settings) -> str | None:
     """The one-time token that guards owner creation, or None once set up."""
     async with app.state.engine.connect() as conn:
         needs_setup = bool(await conn.scalar(text("SELECT auth_needs_setup()")))
-    if not needs_setup:
+    if not needs_setup or settings.desktop:
+        # The desktop app creates its owner through desktop sign-in instead.
         return None
     if settings.setup_token is not None:
         return settings.setup_token.get_secret_value()

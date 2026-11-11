@@ -1,8 +1,9 @@
 name: Desktop app
 
 # Builds the Windows and macOS app, and smoke-tests its stack on each
-# platform. A `desktop-v*` tag also makes a draft GitHub release; nothing is
-# published until a maintainer publishes that draft.
+# platform. A `desktop-vX.Y.Z` tag builds that version and makes a GitHub
+# release: published at once when the update key is set up (so installed
+# apps update themselves), otherwise a draft for a maintainer to publish.
 #
 # Optional settings (the build works without them, unsigned):
 #   vars.TAURI_UPDATER_PUBKEY + secrets.TAURI_SIGNING_PRIVATE_KEY
@@ -119,6 +120,7 @@ jobs:
         with:
           name: smoke-logs-${{ matrix.platform }}
           path: ${{ runner.temp }}/openchart-data/logs/
+          retention-days: 7
 
       - name: Build the installers
         env:
@@ -138,18 +140,35 @@ jobs:
                       TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
             [ -n "${!name}" ] || unset "$name"
           done
-          config='{}'
+          # A desktop-vX.Y.Z tag sets the version; other builds stay 0.1.0.
+          version=
+          case "$GITHUB_REF" in
+            refs/tags/desktop-v*)
+              version="${GITHUB_REF_NAME#desktop-v}"
+              # Windows installers only take plain numeric versions.
+              if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "::error::Tag $GITHUB_REF_NAME must look like desktop-v1.2.3"
+                exit 1
+              fi
+              ;;
+          esac
+          updater=
           if [ -n "$UPDATER_PUBKEY" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            config=$(node -e '
-              const [key, repo] = process.argv.slice(1);
-              console.log(JSON.stringify({
-                bundle: { createUpdaterArtifacts: true },
-                plugins: { updater: {
-                  pubkey: key,
-                  endpoints: [`https://github.com/${repo}/releases/latest/download/latest.json`],
-                } },
-              }));' "$UPDATER_PUBKEY" "$GITHUB_REPOSITORY")
+            updater=1
           fi
+          config=$(node -e '
+            const [version, updater, key, repo] = process.argv.slice(1);
+            const config = {};
+            if (version) config.version = version;
+            if (updater) {
+              config.bundle = { createUpdaterArtifacts: true };
+              config.plugins = { updater: {
+                pubkey: key,
+                endpoints: [`https://github.com/${repo}/releases/latest/download/latest.json`],
+              } };
+            }
+            console.log(JSON.stringify(config));' \
+            "$version" "$updater" "$UPDATER_PUBKEY" "$GITHUB_REPOSITORY")
           pnpm --filter @opencharts/desktop tauri build --ci --config "$config"
       - name: Collect the installers
         run: |
@@ -170,9 +189,13 @@ jobs:
           name: openchart-${{ matrix.platform }}
           path: ${{ runner.temp }}/installers/${{ matrix.platform }}/
           if-no-files-found: error
+          # About 150 MB per platform: keep pull-request builds briefly so the
+          # repository's artifact storage doesn't fill up. Releases keep
+          # tagged versions for good.
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
 
   release:
-    name: Draft release
+    name: Release
     if: startsWith(github.ref, 'refs/tags/desktop-v')
     needs: build
     runs-on: ubuntu-latest
@@ -198,12 +221,16 @@ jobs:
               > latest.json
             echo "file=latest.json" >> "$GITHUB_OUTPUT"
           fi
-      - name: Create the draft release
+      - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
           LATEST: ${{ steps.updater.outputs.file }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+          # With signed updates, publish at once: installed apps read
+          # releases/latest. Without them, leave a draft to publish by hand.
+          publish=--draft
+          [ -n "$LATEST" ] && publish=--latest
+          gh release create "$GITHUB_REF_NAME" "$publish" --verify-tag \
             --title "OpenChart desktop ${GITHUB_REF_NAME#desktop-v}" \
             --notes "Windows and macOS installers. See docs/guides/desktop.md to install." \
             installers/*/* $LATEST

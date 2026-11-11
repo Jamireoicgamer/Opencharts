@@ -23,7 +23,19 @@ Macs with an Intel processor aren't supported by the desktop app yet; run the [s
 
 ## First start
 
-OpenChart creates its database the first time it opens, which takes a few seconds. It then asks for the name, email and password you'll sign in with. There is no setup token to find: the app passes it to the window itself. After that, it's the same app as on a server, with the same workspace, live prices, charts, alerts and two-factor options.
+OpenChart creates its database the first time it opens, which takes a few seconds, then opens straight to your workspace. There's nothing to sign up for and no password to remember. Otherwise it's the same app as on a server, with the same workspace, live prices, charts and alerts.
+
+### Why there's no sign-in, and what keeps it private
+
+Each time OpenChart opens, it makes a new random key (256 bits) and hands it to two things only: the OpenChart service it has just started, and its own window. The window uses the key to sign you in, then drops it from its address bar. The key is never saved to disk, and a new one replaces it at the next start.
+
+Anything else, such as another app, a web page in your browser, or another computer on your network, doesn't have the key, so it gets the normal sign-in page and nothing else. The service only listens on this computer anyway. Wrong keys are refused, logged under **Account → Activity**, and slowed down after a few tries.
+
+Settings that normally ask you to "confirm it's you" (changing a data-source key, for example) are confirmed the same way, without a password.
+
+If someone else can use your computer account, they can open OpenChart too, just like your email app or files. If that matters to you, lock your computer when you step away.
+
+**Want a password anyway?** Under **Account → Security** you can add a password, a passkey or two-factor. Those are only needed if you open the app's address in a browser yourself (sign in there with the email shown under **Account**); the window keeps signing in on its own. Accounts made with an earlier version, which asked for a password, keep their name, email and password, and now open without asking too.
 
 Prices come from the internet. Crypto works straight away. UK and US shares need Yahoo Finance or a Twelve Data key, switched on in **Settings → Data sources** (see the [market data guide](market-data.md)).
 
@@ -52,7 +64,11 @@ The export carries your watchlist, theses with every version, research notes and
 
 ## Updates
 
-When a build is made with the project's update key, OpenChart checks for a new version each time it starts. If there is one, it asks before installing. Each update is checked against the public key built into the app, and anything else is refused. Builds made without the key never check for updates.
+OpenChart checks for a new version each time it starts. If there is one, it asks "OpenChart X is available… Install and restart?" and installs it only if you say yes. Your data and keys are kept.
+
+Every update is signed. The app checks each download against the public key built into it and refuses anything else, so only the project's own releases can update it.
+
+**One manual install first.** Builds made before the update key was set up (including the first ones) don't have the key built in, so they can't update themselves. Install the first version that does by hand, over the top of the old one: your data stays. From then on, updates arrive in the app.
 
 ## How it works
 
@@ -65,7 +81,7 @@ The page in the window gets no access to the computer beyond what a browser tab 
 
 ## For maintainers: building and releasing
 
-The **Desktop app** workflow (`.github/workflows/desktop.yml`) builds on Windows and macOS (Apple silicon). On each platform it smoke-tests the stack (fresh install, setup, a live Coinbase price, history, export, restart and sign-in) before building the installers.
+The **Desktop app** workflow (`.github/workflows/desktop.yml`) builds on Windows and macOS (Apple silicon). On each platform it smoke-tests the stack (fresh install, desktop sign-in and a refused wrong key, a live Coinbase price, history, export, restart with a new key, and "confirm it's you") before building the installers.
 
 To build locally on Windows or macOS:
 
@@ -93,17 +109,17 @@ pnpm --filter @opencharts/desktop stage
 pnpm --filter @opencharts/desktop tauri build
 ```
 
-**Releasing:** push a tag such as `desktop-v0.1.0`. The workflow attaches the installers to a **draft** release, and nothing is public until you publish the draft.
+**Setting up automatic updates** (once). GitHub makes the key; you never handle it unencrypted:
+1. Choose a long password (at least 16 characters; a password manager can make one). In the repository, open **Settings → Secrets and variables → Actions → Secrets → New repository secret**. Name it `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` and paste the password.
+2. Open **Actions → Create update key → Run workflow → Run workflow**. It takes about a minute.
+3. On the finished run, download **update-key** and unzip it. It holds two text files:
+   - `TAURI_SIGNING_PRIVATE_KEY.txt`: add it as a **secret** with that name (paste the whole file).
+   - `TAURI_UPDATER_PUBKEY.txt`: add it as a **variable** (the **Variables** tab) with that name.
+4. Delete the unzipped files, then delete the run (its **…** menu), so the key isn't kept there.
 
-**Automatic updates** need a signing key pair, made once:
+The private key is encrypted with your password, and the repository is public, so it is only ever uploaded encrypted; the download is useless without the password, and it expires after a day anyway. Keep the password secret where it is. If the key or password is lost, installed apps can't receive updates and must be reinstalled by hand with a new key, so the workflow refuses to replace an existing key unless you tick **Replace the existing key**.
 
-```bash
-pnpm --filter @opencharts/desktop tauri signer generate -w ~/.tauri/openchart.key
-```
-
-1. Add the private key file's contents as the repository secret `TAURI_SIGNING_PRIVATE_KEY`, and its password, if you set one, as `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
-2. Add the public key as the repository variable `TAURI_UPDATER_PUBKEY`.
-3. Keep the private key safe: anyone with it can ship updates to every install.
+**Releasing a version:** push a tag such as `desktop-v0.2.0` (three numbers; each release must be higher than the last). The workflow builds that version and, with the update key set up, publishes the release, which every installed app picks up next time it opens. Without the key, it makes a **draft** release instead, which stays private until you publish it.
 
 **Code signing,** when certificates are available:
 - **macOS:** add `APPLE_CERTIFICATE` (base64 .p12), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password) and `APPLE_TEAM_ID` as secrets. The build signs and notarises when they're present.

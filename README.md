@@ -14,7 +14,7 @@ A minimal, near-black, chart-first, self-hosted investment terminal with AI rese
 > - **pro charting, part one** (M4): indicators (moving averages, Bollinger Bands, VWAP, volume, RSI, MACD) and drawing tools (trend lines, levels, rectangles, Fibonacci retracements, notes), saved to your account — see the [charts guide](docs/guides/charts.md).
 >
 >
-> **New: a [desktop app](docs/guides/desktop.md) for Windows and macOS** (M3½) runs all of this on one computer, with no server or Docker. Early builds are unsigned.
+> **New: a [desktop app](docs/guides/desktop.md) for Windows and macOS** (M3½) runs all of this on one computer, with no server or Docker. It opens straight to your workspace with no sign-in, and updates itself. Early builds are unsigned.
 >
 > Coinbase, Kraken and Yahoo were verified live in November 2026; Twelve Data still needs testing with a real key (see the [market data guide](docs/guides/market-data.md)). **AI arrives in M5.** Nothing in the app is simulated. Nothing here is investment advice. See the [roadmap](docs/ROADMAP.md).
 
